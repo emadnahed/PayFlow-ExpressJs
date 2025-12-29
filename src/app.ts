@@ -1,7 +1,6 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import { config } from './config';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import healthRoutes from './routes/health';
@@ -10,6 +9,12 @@ import { walletRoutes } from './services/wallet';
 import { transactionRoutes } from './services/transaction';
 import { ledgerRoutes } from './services/ledger';
 import { webhookRoutes } from './services/webhook';
+import {
+  correlationMiddleware,
+  metricsMiddleware,
+  getMetrics,
+  getMetricsContentType,
+} from './observability';
 
 export const createApp = (): Application => {
   const app = express();
@@ -22,10 +27,9 @@ export const createApp = (): Application => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Logging (skip in test environment)
-  if (!config.isTest) {
-    app.use(morgan('dev'));
-  }
+  // Observability middleware (applied early to capture all requests)
+  app.use(correlationMiddleware);
+  app.use(metricsMiddleware);
 
   // Routes
   app.use('/health', healthRoutes);
@@ -34,6 +38,16 @@ export const createApp = (): Application => {
   app.use('/transactions', transactionRoutes);
   app.use('/ledger', ledgerRoutes);
   app.use('/webhooks', webhookRoutes);
+
+  // Metrics endpoint (Prometheus format)
+  app.get('/metrics', async (_req, res) => {
+    try {
+      res.set('Content-Type', getMetricsContentType());
+      res.send(await getMetrics());
+    } catch (error) {
+      res.status(500).send('Error collecting metrics');
+    }
+  });
 
   // Root route
   app.get('/', (_req, res) => {
