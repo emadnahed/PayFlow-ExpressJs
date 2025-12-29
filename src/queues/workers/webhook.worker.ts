@@ -5,12 +5,13 @@
  */
 
 import { Worker, Job } from 'bullmq';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import crypto from 'crypto';
 import { queueConnection, QUEUE_NAMES, WORKER_CONCURRENCY } from '../queue.config';
 import { WebhookJobData, WebhookJobResult } from '../webhook.queue';
 import { WebhookSubscription } from '../../models/WebhookSubscription';
 import { WebhookDelivery } from '../../models/WebhookDelivery';
+import { config } from '../../config';
 
 let webhookWorker: Worker<WebhookJobData, WebhookJobResult> | null = null;
 
@@ -52,7 +53,7 @@ async function processWebhookJob(job: Job<WebhookJobData, WebhookJobResult>): Pr
         'X-PayFlow-Delivery-ID': deliveryId,
         'X-PayFlow-Event': payload.event,
       },
-      timeout: 5000,
+      timeout: config.webhook.timeoutMs,
       validateStatus: (status) => status >= 200 && status < 300,
     });
 
@@ -72,14 +73,22 @@ async function processWebhookJob(job: Job<WebhookJobData, WebhookJobResult>): Pr
 
     return { success: true, statusCode: response.status };
   } catch (error) {
-    const axiosError = error as AxiosError;
-    const statusCode = axiosError.response?.status;
-    const errorMessage = axiosError.message || 'Unknown error';
+    // Use axios.isAxiosError() type guard for proper error handling
+    let statusCode: number | undefined;
+    let errorMessage: string;
+
+    if (axios.isAxiosError(error)) {
+      statusCode = error.response?.status;
+      errorMessage = error.message;
+    } else {
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    }
 
     console.error(`[Webhook Worker] Delivery failed for ${deliveryId}: ${errorMessage}`);
 
     // Update delivery as retrying (if more attempts remain) or failed
-    const isLastAttempt = job.attemptsMade + 1 >= (job.opts.attempts || 5);
+    const maxAttempts = job.opts.attempts || config.webhook.retryAttempts;
+    const isLastAttempt = job.attemptsMade + 1 >= maxAttempts;
 
     await updateDeliveryStatus(deliveryId, isLastAttempt ? 'FAILED' : 'RETRYING', {
       responseCode: statusCode,
@@ -138,15 +147,16 @@ function setupWorkerEvents(worker: Worker<WebhookJobData, WebhookJobResult>): vo
   worker.on('failed', async (job, err) => {
     if (!job) return;
 
-    const isLastAttempt = job.attemptsMade >= (job.opts.attempts || 5);
-    console.error(`[Webhook Worker] Job ${job.id} failed (attempt ${job.attemptsMade}/${job.opts.attempts}): ${err.message}`);
+    const maxAttempts = job.opts.attempts || config.webhook.retryAttempts;
+    const isLastAttempt = job.attemptsMade >= maxAttempts;
+    console.error(`[Webhook Worker] Job ${job.id} failed (attempt ${job.attemptsMade}/${maxAttempts}): ${err.message}`);
 
     if (isLastAttempt) {
       console.log(`[Webhook Worker] Job ${job.id} moved to dead letter queue after ${job.attemptsMade} attempts`);
 
-      // Check if we should disable the webhook after too many failures
+      // Check if we should disable the webhook after too many failures (configurable)
       const subscription = await WebhookSubscription.findOne({ webhookId: job.data.webhookId });
-      if (subscription && subscription.failureCount >= 10) {
+      if (subscription && subscription.failureCount >= config.webhook.maxFailureCount) {
         await WebhookSubscription.updateOne(
           { webhookId: job.data.webhookId },
           { $set: { isActive: false } }

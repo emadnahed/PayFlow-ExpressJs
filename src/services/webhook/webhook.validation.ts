@@ -7,6 +7,9 @@ import { EventType } from '../../types/events';
 
 const validEventTypes = Object.values(EventType);
 
+// Pagination constants - matching config defaults
+const MAX_PAGE_LIMIT = 100;
+
 /**
  * Validation rules for creating a webhook
  */
@@ -14,8 +17,8 @@ export const createWebhookValidation = [
   body('url')
     .notEmpty()
     .withMessage('URL is required')
-    .isURL({ require_protocol: true })
-    .withMessage('Invalid URL format'),
+    .isURL({ require_protocol: true, protocols: ['https'] })
+    .withMessage('Invalid URL format. Only HTTPS URLs are allowed.'),
 
   body('events')
     .isArray({ min: 1 })
@@ -83,8 +86,8 @@ export const listWebhooksValidation = [
 
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100'),
+    .isInt({ min: 1, max: MAX_PAGE_LIMIT })
+    .withMessage(`Limit must be between 1 and ${MAX_PAGE_LIMIT}`),
 
   query('offset')
     .optional()
@@ -107,8 +110,8 @@ export const deliveryLogsValidation = [
 
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100'),
+    .isInt({ min: 1, max: MAX_PAGE_LIMIT })
+    .withMessage(`Limit must be between 1 and ${MAX_PAGE_LIMIT}`),
 
   query('offset')
     .optional()

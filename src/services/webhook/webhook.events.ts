@@ -2,6 +2,7 @@
  * Webhook Event Handlers
  *
  * Listens for transaction events and triggers webhook deliveries.
+ * Uses event payload data directly to avoid redundant database lookups.
  */
 
 import { eventBus } from '../../events/eventBus';
@@ -15,41 +16,27 @@ import { webhookService } from './webhook.service';
 import { Transaction } from '../../models/Transaction';
 
 /**
- * Build webhook payload for a transaction event
- */
-async function buildTransactionPayload(
-  event: BaseEvent,
-  status: string,
-  additionalData?: Record<string, unknown>
-) {
-  const transaction = await Transaction.findOne({ transactionId: event.transactionId });
-
-  return {
-    event: event.eventType,
-    transactionId: event.transactionId,
-    status,
-    amount: transaction?.amount || 0,
-    currency: transaction?.currency || 'INR',
-    timestamp: event.timestamp.toISOString(),
-    senderId: transaction?.senderId,
-    receiverId: transaction?.receiverId,
-    ...additionalData,
-  };
-}
-
-/**
  * Handle TRANSACTION_COMPLETED event
+ * Uses event payload directly - no redundant database lookups
  */
 async function handleTransactionCompleted(event: TransactionCompletedEvent): Promise<void> {
   const { transactionId } = event;
+  const { senderId, receiverId, amount, currency } = event.payload;
 
   console.log(`[Webhook Events] TRANSACTION_COMPLETED for txn ${transactionId}`);
 
   try {
-    const payload = await buildTransactionPayload(event, 'COMPLETED', {
-      senderId: event.payload.senderId,
-      receiverId: event.payload.receiverId,
-    });
+    // Build payload directly from event data - no DB lookup needed
+    const payload = {
+      event: EventType.TRANSACTION_COMPLETED,
+      transactionId,
+      status: 'COMPLETED',
+      amount,
+      currency,
+      timestamp: event.timestamp.toISOString(),
+      senderId,
+      receiverId,
+    };
 
     const count = await webhookService.triggerWebhooks(
       EventType.TRANSACTION_COMPLETED,
@@ -65,17 +52,30 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
 
 /**
  * Handle TRANSACTION_FAILED event
+ * Requires DB lookup only for missing data (amount, currency)
  */
 async function handleTransactionFailed(event: TransactionFailedEvent): Promise<void> {
   const { transactionId } = event;
+  const { reason, refunded } = event.payload;
 
   console.log(`[Webhook Events] TRANSACTION_FAILED for txn ${transactionId}`);
 
   try {
-    const payload = await buildTransactionPayload(event, 'FAILED', {
-      reason: event.payload.reason,
-      refunded: event.payload.refunded,
-    });
+    // Need to get transaction for amount/currency since not in event payload
+    const transaction = await Transaction.findOne({ transactionId });
+
+    const payload = {
+      event: EventType.TRANSACTION_FAILED,
+      transactionId,
+      status: 'FAILED',
+      amount: transaction?.amount || 0,
+      currency: transaction?.currency || 'INR',
+      timestamp: event.timestamp.toISOString(),
+      senderId: transaction?.senderId,
+      receiverId: transaction?.receiverId,
+      reason,
+      refunded,
+    };
 
     const count = await webhookService.triggerWebhooks(
       EventType.TRANSACTION_FAILED,

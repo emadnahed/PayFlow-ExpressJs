@@ -36,12 +36,13 @@ const webhookSubscriptionSchema = new Schema<IWebhookSubscription>(
         validator: function (v: string) {
           try {
             const url = new URL(v);
-            return url.protocol === 'https:' || url.protocol === 'http:';
+            // Only allow HTTPS for secure webhook delivery
+            return url.protocol === 'https:';
           } catch {
             return false;
           }
         },
-        message: 'Invalid URL format',
+        message: 'Invalid URL format. Only HTTPS URLs are allowed.',
       },
     },
     secret: {
