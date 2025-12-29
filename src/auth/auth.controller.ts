@@ -41,7 +41,14 @@ export class AuthController {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        throw new ApiError(400, 'Validation failed');
+        const error = new ApiError(400, 'Validation failed');
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors.array().reduce((acc, err) => {
+          const field = (err as { path: string }).path;
+          if (!acc[field]) acc[field] = [];
+          acc[field].push(err.msg);
+          return acc;
+        }, {} as Record<string, string[]>);
+        throw error;
       }
 
       const dto: LoginDTO = {
@@ -64,7 +71,14 @@ export class AuthController {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        throw new ApiError(400, 'Validation failed');
+        const error = new ApiError(400, 'Validation failed');
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors.array().reduce((acc, err) => {
+          const field = (err as { path: string }).path;
+          if (!acc[field]) acc[field] = [];
+          acc[field].push(err.msg);
+          return acc;
+        }, {} as Record<string, string[]>);
+        throw error;
       }
 
       const { refreshToken } = req.body;

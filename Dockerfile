@@ -77,4 +77,4 @@ ENV UV_THREADPOOL_SIZE=8
 # --gc-interval=100: More frequent GC for lower memory footprint
 
 # Start the application with optimized flags
-CMD ["node", "--max-old-space-size=256", "--optimize-for-size", "dist/server.js"]
+CMD ["node", "--max-old-space-size=256", "--optimize-for-size", "--gc-interval=100", "dist/server.js"]

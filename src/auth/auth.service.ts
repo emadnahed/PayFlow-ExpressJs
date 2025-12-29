@@ -47,8 +47,8 @@ export class AuthService {
       throw new ApiError(409, 'Email already registered');
     }
 
-    const userId = `user_${crypto.randomUUID().replace(/-/g, '').substring(0, 12)}`;
-    const walletId = `wallet_${crypto.randomUUID().replace(/-/g, '').substring(0, 12)}`;
+    const userId = `user_${crypto.randomUUID().replace(/-/g, '')}`;
+    const walletId = `wallet_${crypto.randomUUID().replace(/-/g, '')}`;
 
     const user = await User.create({
       userId,
