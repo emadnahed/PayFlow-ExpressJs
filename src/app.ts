@@ -1,8 +1,18 @@
+/**
+ * Express Application Configuration
+ *
+ * Sets up the Express application with all middleware, routes,
+ * and security configurations.
+ */
+
 import express, { Application } from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import { config } from './config';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
+import { globalLimiter, authLimiter, transactionLimiter } from './middlewares/rateLimiter';
+import { idempotencyMiddleware, validateIdempotencyKey } from './middlewares/idempotency';
 import healthRoutes from './routes/health';
 import { authRoutes } from './auth';
 import { walletRoutes } from './services/wallet';
@@ -15,29 +25,83 @@ import {
   getMetrics,
   getMetricsContentType,
 } from './observability';
+import { generateOpenAPI } from './docs/openapi';
+
+/**
+ * CORS configuration
+ * - Production: Restricted to specific domains
+ * - Development: Allow all origins
+ */
+const corsOptions: CorsOptions = {
+  origin: config.isProduction
+    ? (process.env.CORS_ORIGINS || '').split(',').filter(Boolean)
+    : '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Idempotency-Key',
+    'X-Correlation-Id',
+    'X-Request-Id',
+  ],
+  exposedHeaders: [
+    'X-Correlation-Id',
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset',
+    'X-Idempotent-Replayed',
+  ],
+  credentials: true,
+  maxAge: 86400, // 24 hours
+};
 
 export const createApp = (): Application => {
   const app = express();
 
-  // Security middleware
-  app.use(helmet());
-  app.use(cors());
+  // Trust proxy (needed for rate limiting behind reverse proxy)
+  app.set('trust proxy', 1);
+
+  // Security middleware - Enhanced Helmet configuration
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
+          scriptSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    })
+  );
+
+  // CORS with enhanced configuration
+  app.use(cors(corsOptions));
 
   // Request parsing
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '10kb' })); // Limit body size
+  app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
   // Observability middleware (applied early to capture all requests)
   app.use(correlationMiddleware);
   app.use(metricsMiddleware);
 
-  // Routes
+  // Validate idempotency key format
+  app.use(validateIdempotencyKey);
+
+  // Global rate limiting (skip in test environment)
+  if (!config.isTest) {
+    app.use(globalLimiter);
+  }
+
+  // Health check routes (no auth required)
   app.use('/health', healthRoutes);
-  app.use('/auth', authRoutes);
-  app.use('/wallets', walletRoutes);
-  app.use('/transactions', transactionRoutes);
-  app.use('/ledger', ledgerRoutes);
-  app.use('/webhooks', webhookRoutes);
 
   // Metrics endpoint (Prometheus format)
   app.get('/metrics', async (_req, res) => {
@@ -49,12 +113,52 @@ export const createApp = (): Application => {
     }
   });
 
+  // API Documentation (Swagger UI)
+  const openApiSpec = generateOpenAPI();
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(openApiSpec, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'PayFlow API Documentation',
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    })
+  );
+
+  // OpenAPI spec as JSON
+  app.get('/api-docs.json', (_req, res) => {
+    res.json(openApiSpec);
+  });
+
+  // Auth routes with strict rate limiting
+  if (!config.isTest) {
+    app.use('/auth/login', authLimiter);
+    app.use('/auth/register', authLimiter);
+  }
+  app.use('/auth', authRoutes);
+
+  // Protected routes
+  app.use('/wallets', walletRoutes);
+
+  // Transaction routes with rate limiting and idempotency
+  if (!config.isTest) {
+    app.use('/transactions', transactionLimiter);
+  }
+  app.use('/transactions', idempotencyMiddleware, transactionRoutes);
+
+  app.use('/ledger', ledgerRoutes);
+  app.use('/webhooks', webhookRoutes);
+
   // Root route
   app.get('/', (_req, res) => {
     res.json({
       name: 'PayFlow API',
       version: '1.0.0',
       description: 'Event-driven UPI-like transaction system',
+      documentation: '/api-docs',
+      health: '/health',
     });
   });
 
