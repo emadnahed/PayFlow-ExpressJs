@@ -23,6 +23,7 @@ export enum TransactionStatus {
   DEBITED = 'DEBITED',
   CREDITED = 'CREDITED',
   COMPLETED = 'COMPLETED',
+  REFUNDING = 'REFUNDING',
   REFUNDED = 'REFUNDED',
   FAILED = 'FAILED',
 }
