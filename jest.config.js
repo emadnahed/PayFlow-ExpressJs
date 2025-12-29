@@ -18,14 +18,14 @@ module.exports = {
   forceExit: true,
   clearMocks: true,
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^uuid$': require.resolve('uuid')
+    '^@/(.*)$': '<rootDir>/src/$1'
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(uuid)/)'
+    'node_modules/(?!(uuid|bullmq)/)'
   ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { useESM: false }],
-    '^.+\\.jsx?$': 'babel-jest'
+    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.mjs$': 'babel-jest'
   }
 };
