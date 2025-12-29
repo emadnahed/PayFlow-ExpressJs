@@ -14,6 +14,12 @@ export const depositValidation = [
       }
       return true;
     }),
+  body('idempotencyKey')
+    .optional()
+    .isString()
+    .withMessage('Idempotency key must be a string')
+    .isLength({ min: 1, max: 64 })
+    .withMessage('Idempotency key must be between 1 and 64 characters'),
 ];
 
 export const getBalanceValidation = [

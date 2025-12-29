@@ -146,6 +146,59 @@ describe('Wallet Endpoints', () => {
 
       expect(response.status).toBe(401);
     });
+
+    it('should support idempotent deposits with idempotencyKey', async () => {
+      const { accessToken } = await createTestUser(app);
+      const idempotencyKey = 'test-deposit-key-123';
+
+      // First deposit with idempotency key
+      const response1 = await request(app)
+        .post('/wallets/me/deposit')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ amount: 500, idempotencyKey });
+
+      expect(response1.status).toBe(200);
+      expect(response1.body.data.newBalance).toBe(500);
+      expect(response1.body.data.idempotent).toBe(false);
+
+      // Second deposit with same idempotency key (should be idempotent)
+      const response2 = await request(app)
+        .post('/wallets/me/deposit')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ amount: 500, idempotencyKey });
+
+      expect(response2.status).toBe(200);
+      expect(response2.body.data.newBalance).toBe(500);
+      expect(response2.body.data.idempotent).toBe(true);
+      expect(response2.body.data.message).toBe('Deposit already processed');
+
+      // Verify final balance is 500 (not 1000)
+      const walletResponse = await request(app)
+        .get('/wallets/me')
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(walletResponse.body.data.wallet.balance).toBe(500);
+    });
+
+    it('should allow different deposits with different idempotencyKeys', async () => {
+      const { accessToken } = await createTestUser(app);
+
+      // First deposit
+      await request(app)
+        .post('/wallets/me/deposit')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ amount: 500, idempotencyKey: 'key-1' });
+
+      // Second deposit with different key
+      const response = await request(app)
+        .post('/wallets/me/deposit')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ amount: 300, idempotencyKey: 'key-2' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.newBalance).toBe(800);
+      expect(response.body.data.idempotent).toBe(false);
+    });
   });
 
   describe('GET /wallets/:id/balance', () => {

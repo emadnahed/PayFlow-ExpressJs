@@ -1,5 +1,11 @@
 import { eventBus } from '../../events/eventBus';
-import { EventType, TransactionInitiatedEvent, RefundRequestedEvent } from '../../types/events';
+import {
+  EventType,
+  TransactionInitiatedEvent,
+  RefundRequestedEvent,
+  DebitSuccessEvent,
+  BaseEvent,
+} from '../../types/events';
 import { walletService } from './wallet.service';
 
 /**
@@ -34,6 +40,7 @@ async function handleRefundRequested(event: RefundRequestedEvent): Promise<void>
     console.log(`[Wallet] Refund successful for txn ${txnId}`);
   } catch (error) {
     console.error(`[Wallet] Refund failed for txn ${txnId}:`, error);
+    // REFUND_FAILED event is published by the service
   }
 }
 
@@ -41,7 +48,7 @@ async function handleRefundRequested(event: RefundRequestedEvent): Promise<void>
  * Handle debit success - credit the receiver's wallet
  * This is called after sender's debit is successful
  */
-async function handleDebitSuccess(event: { transactionId: string; payload: { receiverId?: string; amount?: number } }): Promise<void> {
+async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
   // This will be handled by the Transaction Saga in Phase 4
   // The saga will call walletService.credit() directly after receiving DEBIT_SUCCESS
   console.log(`[Wallet] DEBIT_SUCCESS received for txn ${event.transactionId}`);
@@ -53,13 +60,22 @@ async function handleDebitSuccess(event: { transactionId: string; payload: { rec
 export async function registerWalletEventHandlers(): Promise<void> {
   try {
     // Subscribe to transaction initiated event to perform debit
-    await eventBus.subscribe(EventType.TRANSACTION_INITIATED, handleTransactionInitiated as any);
+    await eventBus.subscribe(
+      EventType.TRANSACTION_INITIATED,
+      (event: BaseEvent) => handleTransactionInitiated(event as TransactionInitiatedEvent)
+    );
 
     // Subscribe to refund requests
-    await eventBus.subscribe(EventType.REFUND_REQUESTED, handleRefundRequested as any);
+    await eventBus.subscribe(
+      EventType.REFUND_REQUESTED,
+      (event: BaseEvent) => handleRefundRequested(event as RefundRequestedEvent)
+    );
 
     // Subscribe to debit success (for logging/monitoring)
-    await eventBus.subscribe(EventType.DEBIT_SUCCESS, handleDebitSuccess as any);
+    await eventBus.subscribe(
+      EventType.DEBIT_SUCCESS,
+      (event: BaseEvent) => handleDebitSuccess(event as DebitSuccessEvent)
+    );
 
     console.log('[Wallet] Event handlers registered');
   } catch (error) {

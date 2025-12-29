@@ -1,8 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { validationResult } from 'express-validator';
 import { walletService } from './wallet.service';
 import { AuthRequest } from '../../auth/auth.types';
 import { ApiError } from '../../middlewares/errorHandler';
+import { IWalletOperation } from '../../models/WalletOperation';
 
 export class WalletController {
   /**
@@ -74,31 +74,20 @@ export class WalletController {
    */
   async deposit(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors.array().reduce((acc, err) => {
-          const field = (err as { path: string }).path;
-          if (!acc[field]) acc[field] = [];
-          acc[field].push(err.msg);
-          return acc;
-        }, {} as Record<string, string[]>);
-        throw error;
-      }
-
       if (!req.user) {
         throw new ApiError(401, 'Not authenticated');
       }
 
-      const { amount } = req.body;
-      const result = await walletService.deposit(req.user.userId, amount);
+      const { amount, idempotencyKey } = req.body;
+      const result = await walletService.deposit(req.user.userId, amount, idempotencyKey);
 
       res.status(200).json({
         success: true,
         data: {
-          message: 'Deposit successful',
+          message: result.idempotent ? 'Deposit already processed' : 'Deposit successful',
           newBalance: result.newBalance,
           operationId: result.operationId,
+          idempotent: result.idempotent,
         },
       });
     } catch (error) {
@@ -122,7 +111,7 @@ export class WalletController {
       res.status(200).json({
         success: true,
         data: {
-          operations: operations.map((op: any) => ({
+          operations: operations.map((op: IWalletOperation) => ({
             operationId: op.operationId,
             type: op.type,
             amount: op.amount,

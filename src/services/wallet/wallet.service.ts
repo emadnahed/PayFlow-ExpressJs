@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { Wallet, IWallet } from '../../models/Wallet';
 import { WalletOperation, IWalletOperation, OperationType } from '../../models/WalletOperation';
 import { ApiError } from '../../middlewares/errorHandler';
@@ -28,7 +27,48 @@ export interface DepositResult extends OperationResult {
   type: 'DEPOSIT';
 }
 
+type OperationTypeValue = 'DEBIT' | 'CREDIT' | 'REFUND' | 'DEPOSIT';
+
+type IdempotencyCheckResult<T extends OperationTypeValue> =
+  | {
+      isIdempotent: true;
+      result: {
+        success: boolean;
+        newBalance: number;
+        operationId: string;
+        idempotent: boolean;
+        type: T;
+      };
+    }
+  | {
+      isIdempotent: false;
+    };
+
 export class WalletService {
+  /**
+   * Private helper for idempotency check
+   * Reduces code duplication across debit, credit, refund, and deposit methods
+   */
+  private async checkIdempotency<T extends OperationTypeValue>(
+    operationId: string,
+    operationType: T
+  ): Promise<IdempotencyCheckResult<T>> {
+    const existing = await WalletOperation.findOne({ operationId });
+    if (existing) {
+      return {
+        isIdempotent: true,
+        result: {
+          success: true,
+          newBalance: existing.resultBalance,
+          operationId,
+          idempotent: true,
+          type: operationType,
+        },
+      };
+    }
+    return { isIdempotent: false };
+  }
+
   /**
    * Get wallet by userId
    */
@@ -67,15 +107,9 @@ export class WalletService {
     const operationId = `${txnId}:DEBIT`;
 
     // Check for existing operation (idempotency)
-    const existing = await WalletOperation.findOne({ operationId });
-    if (existing) {
-      return {
-        success: true,
-        newBalance: existing.resultBalance,
-        operationId,
-        idempotent: true,
-        type: 'DEBIT',
-      };
+    const idempotencyCheck = await this.checkIdempotency(operationId, 'DEBIT');
+    if (idempotencyCheck.isIdempotent) {
+      return idempotencyCheck.result;
     }
 
     // Get wallet first to get walletId
@@ -114,7 +148,7 @@ export class WalletService {
       operationId,
       walletId: wallet.walletId,
       userId,
-      type: 'DEBIT' as OperationType,
+      type: 'DEBIT',
       amount,
       resultBalance: wallet.balance,
       transactionId: txnId,
@@ -145,15 +179,9 @@ export class WalletService {
     const operationId = `${txnId}:CREDIT`;
 
     // Check for existing operation (idempotency)
-    const existing = await WalletOperation.findOne({ operationId });
-    if (existing) {
-      return {
-        success: true,
-        newBalance: existing.resultBalance,
-        operationId,
-        idempotent: true,
-        type: 'CREDIT',
-      };
+    const idempotencyCheck = await this.checkIdempotency(operationId, 'CREDIT');
+    if (idempotencyCheck.isIdempotent) {
+      return idempotencyCheck.result;
     }
 
     // Get wallet first to verify existence
@@ -184,7 +212,7 @@ export class WalletService {
       operationId,
       walletId: wallet.walletId,
       userId,
-      type: 'CREDIT' as OperationType,
+      type: 'CREDIT',
       amount,
       resultBalance: wallet.balance,
       transactionId: txnId,
@@ -215,15 +243,21 @@ export class WalletService {
     const operationId = `${txnId}:REFUND`;
 
     // Check for existing operation (idempotency)
-    const existing = await WalletOperation.findOne({ operationId });
-    if (existing) {
-      return {
-        success: true,
-        newBalance: existing.resultBalance,
-        operationId,
-        idempotent: true,
-        type: 'REFUND',
-      };
+    const idempotencyCheck = await this.checkIdempotency(operationId, 'REFUND');
+    if (idempotencyCheck.isIdempotent) {
+      return idempotencyCheck.result;
+    }
+
+    // Check wallet exists before attempting refund
+    const walletCheck = await Wallet.findOne({ userId });
+    if (!walletCheck) {
+      await eventBus.publish({
+        eventType: EventType.REFUND_FAILED,
+        transactionId: txnId,
+        timestamp: new Date(),
+        payload: { userId, amount, reason: 'WALLET_NOT_FOUND' },
+      });
+      throw new ApiError(404, 'Wallet not found');
     }
 
     // Perform atomic refund (credit back)
@@ -234,6 +268,12 @@ export class WalletService {
     );
 
     if (!wallet) {
+      await eventBus.publish({
+        eventType: EventType.REFUND_FAILED,
+        transactionId: txnId,
+        timestamp: new Date(),
+        payload: { userId, amount, reason: 'WALLET_UPDATE_FAILED' },
+      });
       throw new ApiError(404, 'Wallet not found');
     }
 
@@ -242,7 +282,7 @@ export class WalletService {
       operationId,
       walletId: wallet.walletId,
       userId,
-      type: 'REFUND' as OperationType,
+      type: 'REFUND',
       amount,
       resultBalance: wallet.balance,
       transactionId: txnId,
@@ -266,14 +306,26 @@ export class WalletService {
   }
 
   /**
-   * Deposit operation - add funds to wallet (for testing/admin)
+   * Deposit operation - add funds to wallet with idempotency
+   * Requires client-provided idempotency key to prevent duplicate deposits
    */
-  async deposit(userId: string, amount: number): Promise<DepositResult> {
-    const operationId = `deposit_${crypto.randomUUID().replace(/-/g, '')}`;
+  async deposit(userId: string, amount: number, idempotencyKey?: string): Promise<DepositResult> {
+    // Use client-provided key or generate one (non-idempotent fallback for testing)
+    const operationId = idempotencyKey
+      ? `deposit:${idempotencyKey}`
+      : `deposit:${userId}:${Date.now()}:${Math.random().toString(36).substring(7)}`;
 
     // Validate amount
     if (amount <= 0) {
       throw new ApiError(400, 'Deposit amount must be positive');
+    }
+
+    // Check for existing operation (idempotency) - only if key was provided
+    if (idempotencyKey) {
+      const idempotencyCheck = await this.checkIdempotency(operationId, 'DEPOSIT');
+      if (idempotencyCheck.isIdempotent) {
+        return idempotencyCheck.result;
+      }
     }
 
     // Perform atomic deposit
@@ -292,7 +344,7 @@ export class WalletService {
       operationId,
       walletId: wallet.walletId,
       userId,
-      type: 'DEPOSIT' as OperationType,
+      type: 'DEPOSIT',
       amount,
       resultBalance: wallet.balance,
     });
