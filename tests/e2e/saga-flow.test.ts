@@ -13,24 +13,6 @@ import { walletService } from '../../src/services/wallet/wallet.service';
 const app = getTestApp();
 
 /**
- * Helper to wait for a condition with timeout
- */
-async function waitForCondition(
-  condition: () => Promise<boolean>,
-  timeout = 5000,
-  interval = 100
-): Promise<boolean> {
-  const startTime = Date.now();
-  while (Date.now() - startTime < timeout) {
-    if (await condition()) {
-      return true;
-    }
-    await new Promise((resolve) => setTimeout(resolve, interval));
-  }
-  return false;
-}
-
-/**
  * Helper to get wallet balance
  */
 async function getBalance(accessToken: string): Promise<number> {

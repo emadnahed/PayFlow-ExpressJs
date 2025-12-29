@@ -22,7 +22,9 @@ async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
   try {
     await transactionService.onDebitSuccess(txnId, senderId, amount);
   } catch (error) {
-    console.error(`[Transaction Saga] Error handling DEBIT_SUCCESS for ${txnId}:`, error);
+    console.error(`[Transaction Saga] CRITICAL: Error handling DEBIT_SUCCESS for ${txnId}:`, error);
+    // Re-throw to allow higher-level error handling (e.g., dead-letter queue)
+    throw error;
   }
 }
 
@@ -38,7 +40,8 @@ async function handleDebitFailed(event: DebitFailedEvent): Promise<void> {
   try {
     await transactionService.onDebitFailed(txnId, reason);
   } catch (error) {
-    console.error(`[Transaction Saga] Error handling DEBIT_FAILED for ${txnId}:`, error);
+    console.error(`[Transaction Saga] CRITICAL: Error handling DEBIT_FAILED for ${txnId}:`, error);
+    throw error;
   }
 }
 
@@ -53,7 +56,8 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
   try {
     await transactionService.onCreditSuccess(txnId);
   } catch (error) {
-    console.error(`[Transaction Saga] Error handling CREDIT_SUCCESS for ${txnId}:`, error);
+    console.error(`[Transaction Saga] CRITICAL: Error handling CREDIT_SUCCESS for ${txnId}:`, error);
+    throw error;
   }
 }
 
@@ -69,7 +73,8 @@ async function handleCreditFailed(event: CreditFailedEvent): Promise<void> {
   try {
     await transactionService.onCreditFailed(txnId, reason);
   } catch (error) {
-    console.error(`[Transaction Saga] Error handling CREDIT_FAILED for ${txnId}:`, error);
+    console.error(`[Transaction Saga] CRITICAL: Error handling CREDIT_FAILED for ${txnId}:`, error);
+    throw error;
   }
 }
 
@@ -84,7 +89,8 @@ async function handleRefundCompleted(event: RefundCompletedEvent): Promise<void>
   try {
     await transactionService.onRefundCompleted(txnId);
   } catch (error) {
-    console.error(`[Transaction Saga] Error handling REFUND_COMPLETED for ${txnId}:`, error);
+    console.error(`[Transaction Saga] CRITICAL: Error handling REFUND_COMPLETED for ${txnId}:`, error);
+    throw error;
   }
 }
 

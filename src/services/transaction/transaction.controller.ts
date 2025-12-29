@@ -3,21 +3,49 @@ import { transactionService } from './transaction.service';
 import { AuthRequest } from '../../auth/auth.types';
 import { ApiError } from '../../middlewares/errorHandler';
 import { TransactionStatus } from '../../types/events';
+import { ITransaction } from '../../models/Transaction';
+
+interface TransactionDTO {
+  transactionId: string;
+  senderId: string;
+  receiverId: string;
+  amount: number;
+  currency: string;
+  status: TransactionStatus;
+  description?: string;
+  failureReason?: string;
+  initiatedAt: Date;
+  completedAt?: Date;
+}
 
 export class TransactionController {
+  /**
+   * Transform ITransaction to TransactionDTO for API response
+   */
+  private toTransactionDTO(transaction: ITransaction): TransactionDTO {
+    return {
+      transactionId: transaction.transactionId,
+      senderId: transaction.senderId,
+      receiverId: transaction.receiverId,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      status: transaction.status,
+      description: transaction.description,
+      failureReason: transaction.failureReason,
+      initiatedAt: transaction.initiatedAt,
+      completedAt: transaction.completedAt,
+    };
+  }
+
   /**
    * Create a new transaction
    * POST /transactions
    */
   async create(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) {
-        throw new ApiError(401, 'Not authenticated');
-      }
-
       const { receiverId, amount, currency, description } = req.body;
 
-      const transaction = await transactionService.initiateTransaction(req.user.userId, {
+      const transaction = await transactionService.initiateTransaction(req.user!.userId, {
         receiverId,
         amount,
         currency,
@@ -27,16 +55,7 @@ export class TransactionController {
       res.status(201).json({
         success: true,
         data: {
-          transaction: {
-            transactionId: transaction.transactionId,
-            senderId: transaction.senderId,
-            receiverId: transaction.receiverId,
-            amount: transaction.amount,
-            currency: transaction.currency,
-            status: transaction.status,
-            description: transaction.description,
-            initiatedAt: transaction.initiatedAt,
-          },
+          transaction: this.toTransactionDTO(transaction),
         },
       });
     } catch (error) {
@@ -50,33 +69,18 @@ export class TransactionController {
    */
   async getById(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) {
-        throw new ApiError(401, 'Not authenticated');
-      }
-
       const { id } = req.params;
       const transaction = await transactionService.getTransaction(id);
 
       // User can only view their own transactions
-      if (transaction.senderId !== req.user.userId && transaction.receiverId !== req.user.userId) {
+      if (transaction.senderId !== req.user!.userId && transaction.receiverId !== req.user!.userId) {
         throw new ApiError(403, 'Not authorized to view this transaction');
       }
 
       res.status(200).json({
         success: true,
         data: {
-          transaction: {
-            transactionId: transaction.transactionId,
-            senderId: transaction.senderId,
-            receiverId: transaction.receiverId,
-            amount: transaction.amount,
-            currency: transaction.currency,
-            status: transaction.status,
-            description: transaction.description,
-            failureReason: transaction.failureReason,
-            initiatedAt: transaction.initiatedAt,
-            completedAt: transaction.completedAt,
-          },
+          transaction: this.toTransactionDTO(transaction),
         },
       });
     } catch (error) {
@@ -90,34 +94,19 @@ export class TransactionController {
    */
   async list(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) {
-        throw new ApiError(401, 'Not authenticated');
-      }
-
       const status = req.query.status as TransactionStatus | undefined;
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
 
       const { transactions, total } = await transactionService.getUserTransactions(
-        req.user.userId,
+        req.user!.userId,
         { status, limit, offset }
       );
 
       res.status(200).json({
         success: true,
         data: {
-          transactions: transactions.map((txn) => ({
-            transactionId: txn.transactionId,
-            senderId: txn.senderId,
-            receiverId: txn.receiverId,
-            amount: txn.amount,
-            currency: txn.currency,
-            status: txn.status,
-            description: txn.description,
-            failureReason: txn.failureReason,
-            initiatedAt: txn.initiatedAt,
-            completedAt: txn.completedAt,
-          })),
+          transactions: transactions.map((txn) => this.toTransactionDTO(txn)),
           pagination: {
             total,
             limit,

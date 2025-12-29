@@ -5,20 +5,20 @@ import { ApiError } from '../../middlewares/errorHandler';
  * Valid state transitions for the Transaction Saga
  *
  * State Machine:
- * INITIATED ────► DEBITED ────► CREDITED ────► COMPLETED
- *                    │              │
- *                    │              │ (credit fails)
- *                    │              ▼
- *                    │         REFUNDING ──────────────────┐
- *                    │              │                      │
- *                    │              ▼                      │
- *                    └────────► FAILED ◄──────────────────┘
- *                (debit fails)
+ * INITIATED ────► DEBITED ────────────────────► COMPLETED
+ *                    │                    (credit success)
+ *                    │ (credit fails)
+ *                    ▼
+ *               REFUNDING ──────────────────┐
+ *                    │                      │
+ *                    │                      │
+ *                    └────────► FAILED ◄────┘
+ *                         (debit fails)
  */
 const validTransitions: Record<TransactionStatus, TransactionStatus[]> = {
   [TransactionStatus.INITIATED]: [TransactionStatus.DEBITED, TransactionStatus.FAILED],
-  [TransactionStatus.DEBITED]: [TransactionStatus.CREDITED, TransactionStatus.REFUNDING],
-  [TransactionStatus.CREDITED]: [TransactionStatus.COMPLETED],
+  [TransactionStatus.DEBITED]: [TransactionStatus.COMPLETED, TransactionStatus.REFUNDING],
+  [TransactionStatus.CREDITED]: [TransactionStatus.COMPLETED], // Legacy - kept for backward compatibility
   [TransactionStatus.REFUNDING]: [TransactionStatus.FAILED],
   [TransactionStatus.REFUNDED]: [], // Terminal state (legacy)
   [TransactionStatus.COMPLETED]: [], // Terminal state

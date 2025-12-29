@@ -159,17 +159,13 @@ export class TransactionService {
   /**
    * Handle DEBIT_SUCCESS event - transition to DEBITED and credit receiver
    */
-  async onDebitSuccess(transactionId: string, senderId: string, amount: number): Promise<void> {
+  async onDebitSuccess(transactionId: string, _senderId: string, amount: number): Promise<void> {
     const transaction = await this.updateStatus(transactionId, TransactionStatus.DEBITED);
 
-    // Now credit the receiver
-    try {
-      await walletService.credit(transaction.receiverId, amount, transactionId);
-      // CREDIT_SUCCESS event will be published by walletService
-    } catch (error) {
-      // Credit failed - will be handled by onCreditFailed
-      console.error(`[Transaction] Credit failed for ${transactionId}:`, error);
-    }
+    // Now credit the receiver. If this fails, walletService will publish a
+    // CREDIT_FAILED event, which will be handled by the onCreditFailed saga step.
+    // Let the error propagate to be logged by a higher-level handler.
+    await walletService.credit(transaction.receiverId, amount, transactionId);
   }
 
   /**
@@ -193,13 +189,11 @@ export class TransactionService {
   }
 
   /**
-   * Handle CREDIT_SUCCESS event - transition to COMPLETED
+   * Handle CREDIT_SUCCESS event - transition directly to COMPLETED
    */
   async onCreditSuccess(transactionId: string): Promise<void> {
-    const transaction = await this.updateStatus(transactionId, TransactionStatus.CREDITED);
-
-    // Immediately transition to COMPLETED
-    await this.updateStatus(transactionId, TransactionStatus.COMPLETED, {
+    // Direct transition from DEBITED to COMPLETED (single DB update)
+    const transaction = await this.updateStatus(transactionId, TransactionStatus.COMPLETED, {
       completedAt: new Date(),
     });
 
