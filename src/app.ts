@@ -8,6 +8,7 @@ import healthRoutes from './routes/health';
 import { authRoutes } from './auth';
 import { walletRoutes } from './services/wallet';
 import { transactionRoutes } from './services/transaction';
+import { ledgerRoutes } from './services/ledger';
 
 export const createApp = (): Application => {
   const app = express();
@@ -30,6 +31,7 @@ export const createApp = (): Application => {
   app.use('/auth', authRoutes);
   app.use('/wallets', walletRoutes);
   app.use('/transactions', transactionRoutes);
+  app.use('/ledger', ledgerRoutes);
 
   // Root route
   app.get('/', (_req, res) => {

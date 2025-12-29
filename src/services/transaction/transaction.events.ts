@@ -11,16 +11,18 @@ import {
 import { transactionService } from './transaction.service';
 
 /**
- * Handle DEBIT_SUCCESS - Sender's wallet debited, now credit receiver
+ * Handle DEBIT_SUCCESS - Sender's wallet debited, update transaction status
+ *
+ * Note: The actual credit operation is handled by the Ledger Service,
+ * which subscribes to DEBIT_SUCCESS events separately.
  */
 async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
-  const { senderId, amount } = event.payload;
   const txnId = event.transactionId;
 
   console.log(`[Transaction Saga] DEBIT_SUCCESS for txn ${txnId}`);
 
   try {
-    await transactionService.onDebitSuccess(txnId, senderId, amount);
+    await transactionService.onDebitSuccess(txnId);
   } catch (error) {
     console.error(`[Transaction Saga] CRITICAL: Error handling DEBIT_SUCCESS for ${txnId}:`, error);
     // Re-throw to allow higher-level error handling (e.g., dead-letter queue)
