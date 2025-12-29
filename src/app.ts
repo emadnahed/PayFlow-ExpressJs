@@ -6,6 +6,7 @@ import { config } from './config';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import healthRoutes from './routes/health';
 import { authRoutes } from './auth';
+import { walletRoutes } from './services/wallet';
 
 export const createApp = (): Application => {
   const app = express();
@@ -26,6 +27,7 @@ export const createApp = (): Application => {
   // Routes
   app.use('/health', healthRoutes);
   app.use('/auth', authRoutes);
+  app.use('/wallets', walletRoutes);
 
   // Root route
   app.get('/', (_req, res) => {

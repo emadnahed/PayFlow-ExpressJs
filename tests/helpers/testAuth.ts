@@ -3,6 +3,16 @@ import { Application } from 'express';
 import { User } from '../../src/models/User';
 import { Wallet } from '../../src/models/Wallet';
 
+export interface TestUserResult {
+  user: {
+    userId: string;
+    name: string;
+    email: string;
+  };
+  accessToken: string;
+  refreshToken: string;
+}
+
 export interface TestUser {
   userId: string;
   name: string;
@@ -14,7 +24,7 @@ export interface TestUser {
 export const createTestUser = async (
   app: Application,
   overrides: Partial<{ name: string; email: string; password: string }> = {}
-): Promise<TestUser> => {
+): Promise<TestUserResult> => {
   const defaultUser = {
     name: 'Test User',
     email: `test-${Date.now()}@example.com`,
@@ -31,12 +41,30 @@ export const createTestUser = async (
   }
 
   return {
-    userId: response.body.data.user.userId,
-    name: response.body.data.user.name,
-    email: response.body.data.user.email,
+    user: {
+      userId: response.body.data.user.userId,
+      name: response.body.data.user.name,
+      email: response.body.data.user.email,
+    },
     accessToken: response.body.data.tokens.accessToken,
     refreshToken: response.body.data.tokens.refreshToken,
   };
+};
+
+export const getAuthToken = async (
+  app: Application,
+  email: string,
+  password: string
+): Promise<string> => {
+  const response = await request(app)
+    .post('/auth/login')
+    .send({ email, password });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to login: ${JSON.stringify(response.body)}`);
+  }
+
+  return response.body.data.tokens.accessToken;
 };
 
 export const cleanupTestUsers = async (): Promise<void> => {
