@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 export interface AppError extends Error {
   statusCode?: number;
   isOperational?: boolean;
+  validationErrors?: Record<string, string[]>;
 }
 
 export const errorHandler = (
@@ -23,6 +24,7 @@ export const errorHandler = (
     success: false,
     error: {
       message,
+      ...(err.validationErrors && { validationErrors: err.validationErrors }),
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     },
   });

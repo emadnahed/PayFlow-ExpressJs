@@ -1,0 +1,153 @@
+# ========================================
+# PayFlow Production Stack
+# Horizontal Scaling with Nginx Load Balancer
+# ========================================
+
+services:
+  # ================================
+  # Nginx Load Balancer
+  # ================================
+  nginx:
+    image: nginx:alpine
+    container_name: payflow-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - payflow-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================
+  # PayFlow API (Horizontally Scaled)
+  # ================================
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb-primary:27017,mongodb-secondary:27017/payflow?replicaSet=rs0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - payflow-network
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M    # 256MB heap + 128MB overhead (threads, buffers, GC)
+        reservations:
+          cpus: '0.25'
+          memory: 192M    # Minimum guaranteed for stable operation
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health/live', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ================================
+  # MongoDB Primary (Replica Set)
+  # ================================
+  mongodb-primary:
+    image: mongo:7
+    container_name: payflow-mongodb-primary
+    command: mongod --replSet rs0 --bind_ip_all
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_primary_data:/data/db
+      - ./mongo/init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
+    environment:
+      - MONGO_INITDB_DATABASE=payflow
+    networks:
+      - payflow-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ================================
+  # MongoDB Secondary (Replica Set)
+  # ================================
+  mongodb-secondary:
+    image: mongo:7
+    container_name: payflow-mongodb-secondary
+    command: mongod --replSet rs0 --bind_ip_all
+    volumes:
+      - mongodb_secondary_data:/data/db
+    depends_on:
+      - mongodb-primary
+    networks:
+      - payflow-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ================================
+  # Redis with Persistence
+  # ================================
+  redis:
+    image: redis:7-alpine
+    container_name: payflow-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - payflow-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  mongodb_primary_data:
+  mongodb_secondary_data:
+  redis_data:
+
+networks:
+  payflow-network:
+    driver: bridge
