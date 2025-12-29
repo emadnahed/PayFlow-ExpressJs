@@ -204,6 +204,13 @@ export class WalletService {
     );
 
     if (!wallet) {
+      // Publish failure event before throwing for saga consistency
+      await eventBus.publish({
+        eventType: EventType.CREDIT_FAILED,
+        transactionId: txnId,
+        timestamp: new Date(),
+        payload: { userId, amount, reason: 'WALLET_UPDATE_FAILED' },
+      });
       throw new ApiError(404, 'Wallet not found');
     }
 

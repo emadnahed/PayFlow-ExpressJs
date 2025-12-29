@@ -44,6 +44,11 @@ class LedgerController {
   /**
    * Update simulation configuration
    * POST /ledger/simulation
+   *
+   * Behavior:
+   * - When enabled=true: Updates config with provided values. Omitted fields preserve existing values.
+   * - When enabled=false: Disables simulation and clears failTransactionIds.
+   * - Use POST /ledger/simulation/reset to fully reset all config to defaults.
    */
   async updateSimulationConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -55,6 +60,7 @@ class LedgerController {
         req.body as SimulationConfigRequest;
 
       if (enabled) {
+        // Enable with provided values; omitted fields preserve existing values
         ledgerSimulation.enable({
           failureRate,
           failTransactionIds: failTransactionIds
@@ -63,6 +69,7 @@ class LedgerController {
           failureType,
         });
       } else {
+        // Disable clears the fail list
         ledgerSimulation.disable();
       }
 

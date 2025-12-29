@@ -108,22 +108,21 @@ export class LedgerService {
         `[Ledger Service] Credit failed for transaction ${transactionId}: ${errorMessage}`
       );
 
-      // If it's a simulated failure, we need to publish CREDIT_FAILED event
-      // since walletService.credit was never called
-      if (error instanceof SimulatedFailureError) {
-        await eventBus.publish({
-          eventType: EventType.CREDIT_FAILED,
-          transactionId,
-          timestamp: new Date(),
-          payload: {
-            receiverId,
-            amount,
-            reason: errorMessage,
-          },
-        });
-      }
-
-      // Note: If walletService.credit failed, it already published CREDIT_FAILED
+      // CRITICAL: Always publish CREDIT_FAILED to ensure saga can proceed to compensation.
+      // The walletService is not consistent in publishing failure events for all error cases,
+      // so this service must take responsibility to prevent stalled sagas.
+      // Note: This may result in duplicate CREDIT_FAILED events in some cases, but the
+      // transaction service's state machine will reject invalid transitions, making this safe.
+      await eventBus.publish({
+        eventType: EventType.CREDIT_FAILED,
+        transactionId,
+        timestamp: new Date(),
+        payload: {
+          receiverId,
+          amount,
+          reason: errorMessage,
+        },
+      });
 
       return {
         success: false,
@@ -168,19 +167,17 @@ export class LedgerService {
             ? error.message
             : 'Unknown error during credit';
 
-      // Publish CREDIT_FAILED for simulated failures
-      if (error instanceof SimulatedFailureError) {
-        await eventBus.publish({
-          eventType: EventType.CREDIT_FAILED,
-          transactionId,
-          timestamp: new Date(),
-          payload: {
-            receiverId,
-            amount,
-            reason: errorMessage,
-          },
-        });
-      }
+      // CRITICAL: Always publish CREDIT_FAILED to ensure saga can proceed to compensation.
+      await eventBus.publish({
+        eventType: EventType.CREDIT_FAILED,
+        transactionId,
+        timestamp: new Date(),
+        payload: {
+          receiverId,
+          amount,
+          reason: errorMessage,
+        },
+      });
 
       return {
         success: false,
