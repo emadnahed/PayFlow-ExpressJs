@@ -6,6 +6,8 @@ import { eventBus } from '../../events/eventBus';
 import { walletService } from '../wallet/wallet.service';
 import { validateTransition, isTerminalState } from './transaction.state';
 
+// Note: walletService is still used for wallet existence validation in initiateTransaction
+
 export interface CreateTransactionDTO {
   receiverId: string;
   amount: number;
@@ -157,15 +159,15 @@ export class TransactionService {
   }
 
   /**
-   * Handle DEBIT_SUCCESS event - transition to DEBITED and credit receiver
+   * Handle DEBIT_SUCCESS event - transition to DEBITED
+   *
+   * Note: The actual credit operation is handled by the Ledger Service,
+   * which subscribes to DEBIT_SUCCESS events separately. This separation
+   * allows for independent scaling and failure simulation for testing.
    */
-  async onDebitSuccess(transactionId: string, _senderId: string, amount: number): Promise<void> {
-    const transaction = await this.updateStatus(transactionId, TransactionStatus.DEBITED);
-
-    // Now credit the receiver. If this fails, walletService will publish a
-    // CREDIT_FAILED event, which will be handled by the onCreditFailed saga step.
-    // Let the error propagate to be logged by a higher-level handler.
-    await walletService.credit(transaction.receiverId, amount, transactionId);
+  async onDebitSuccess(transactionId: string): Promise<void> {
+    await this.updateStatus(transactionId, TransactionStatus.DEBITED);
+    // Credit operation is handled by Ledger Service via event subscription
   }
 
   /**

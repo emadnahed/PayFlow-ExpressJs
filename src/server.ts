@@ -2,6 +2,9 @@ import { createApp } from './app';
 import { config } from './config';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { eventBus } from './events/eventBus';
+import { registerWalletEventHandlers, unregisterWalletEventHandlers } from './services/wallet';
+import { registerTransactionEventHandlers, unregisterTransactionEventHandlers } from './services/transaction';
+import { registerLedgerEventHandlers, unregisterLedgerEventHandlers } from './services/ledger';
 
 const app = createApp();
 
@@ -14,6 +17,12 @@ const startServer = async (): Promise<void> => {
     // Connect to event bus
     await eventBus.connect();
     console.log('Event bus connected successfully');
+
+    // Register event handlers (order matters: wallet -> transaction -> ledger)
+    await registerWalletEventHandlers();
+    await registerTransactionEventHandlers();
+    await registerLedgerEventHandlers();
+    console.log('Event handlers registered successfully');
 
     // Start HTTP server
     const server = app.listen(config.port, () => {
@@ -30,6 +39,11 @@ const startServer = async (): Promise<void> => {
         console.log('HTTP server closed');
 
         try {
+          // Unregister event handlers
+          await unregisterLedgerEventHandlers();
+          await unregisterTransactionEventHandlers();
+          await unregisterWalletEventHandlers();
+
           await eventBus.disconnect();
           await disconnectDatabase();
           console.log('Graceful shutdown completed');

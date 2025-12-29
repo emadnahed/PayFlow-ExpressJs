@@ -9,6 +9,7 @@ import { createTestUser } from '../helpers/testAuth';
 import { TransactionStatus } from '../../src/types/events';
 import { transactionService } from '../../src/services/transaction/transaction.service';
 import { walletService } from '../../src/services/wallet/wallet.service';
+import { ledgerService } from '../../src/services/ledger/ledger.service';
 
 const app = getTestApp();
 
@@ -76,14 +77,17 @@ describe('Saga Flow Tests', () => {
       // Step 2: Simulate DEBIT_SUCCESS event (debit the sender)
       await walletService.debit(sender.user.userId, 100, txnId);
 
-      // Step 3: Simulate saga handling of DEBIT_SUCCESS
-      await transactionService.onDebitSuccess(txnId, sender.user.userId, 100);
+      // Step 3: Simulate transaction saga handling of DEBIT_SUCCESS (update status to DEBITED)
+      await transactionService.onDebitSuccess(txnId);
 
-      // Verify state after debit (credit happens in onDebitSuccess)
+      // Verify state after debit
       txn = await transactionService.getTransaction(txnId);
       expect(txn.status).toBe(TransactionStatus.DEBITED);
 
-      // Step 4: Simulate CREDIT_SUCCESS event handling
+      // Step 4: Simulate ledger service handling of DEBIT_SUCCESS (credit receiver)
+      await ledgerService.processCredit(txnId);
+
+      // Step 5: Simulate CREDIT_SUCCESS event handling
       await transactionService.onCreditSuccess(txnId);
 
       // Verify final state
@@ -123,7 +127,8 @@ describe('Saga Flow Tests', () => {
 
         // Simulate full saga
         await walletService.debit(sender.user.userId, 50, txnId);
-        await transactionService.onDebitSuccess(txnId, sender.user.userId, 50);
+        await transactionService.onDebitSuccess(txnId);
+        await ledgerService.processCredit(txnId);
         await transactionService.onCreditSuccess(txnId);
       }
 
@@ -205,7 +210,8 @@ describe('Saga Flow Tests', () => {
 
       // Complete first transaction
       await walletService.debit(sender.user.userId, 100, txn1Id);
-      await transactionService.onDebitSuccess(txn1Id, sender.user.userId, 100);
+      await transactionService.onDebitSuccess(txn1Id);
+      await ledgerService.processCredit(txn1Id);
       await transactionService.onCreditSuccess(txn1Id);
 
       // Second transaction - should fail (no balance left)
@@ -373,17 +379,20 @@ describe('Saga Flow Tests', () => {
       await Promise.all([
         (async () => {
           await walletService.debit(sender.user.userId, 100, txn1Id);
-          await transactionService.onDebitSuccess(txn1Id, sender.user.userId, 100);
+          await transactionService.onDebitSuccess(txn1Id);
+          await ledgerService.processCredit(txn1Id);
           await transactionService.onCreditSuccess(txn1Id);
         })(),
         (async () => {
           await walletService.debit(sender.user.userId, 150, txn2Id);
-          await transactionService.onDebitSuccess(txn2Id, sender.user.userId, 150);
+          await transactionService.onDebitSuccess(txn2Id);
+          await ledgerService.processCredit(txn2Id);
           await transactionService.onCreditSuccess(txn2Id);
         })(),
         (async () => {
           await walletService.debit(sender.user.userId, 200, txn3Id);
-          await transactionService.onDebitSuccess(txn3Id, sender.user.userId, 200);
+          await transactionService.onDebitSuccess(txn3Id);
+          await ledgerService.processCredit(txn3Id);
           await transactionService.onCreditSuccess(txn3Id);
         })(),
       ]);
@@ -439,13 +448,15 @@ describe('Saga Flow Tests', () => {
       const results = await Promise.allSettled([
         (async () => {
           await walletService.debit(sender.user.userId, 80, txn1Id);
-          await transactionService.onDebitSuccess(txn1Id, sender.user.userId, 80);
+          await transactionService.onDebitSuccess(txn1Id);
+          await ledgerService.processCredit(txn1Id);
           await transactionService.onCreditSuccess(txn1Id);
           return 'success';
         })(),
         (async () => {
           await walletService.debit(sender.user.userId, 80, txn2Id);
-          await transactionService.onDebitSuccess(txn2Id, sender.user.userId, 80);
+          await transactionService.onDebitSuccess(txn2Id);
+          await ledgerService.processCredit(txn2Id);
           await transactionService.onCreditSuccess(txn2Id);
           return 'success';
         })(),
@@ -533,7 +544,8 @@ describe('Saga Flow Tests', () => {
 
       // Complete the saga
       await walletService.debit(sender.user.userId, 123, txnId);
-      await transactionService.onDebitSuccess(txnId, sender.user.userId, 123);
+      await transactionService.onDebitSuccess(txnId);
+      await ledgerService.processCredit(txnId);
       await transactionService.onCreditSuccess(txnId);
 
       // Verify transaction amount
@@ -581,7 +593,8 @@ describe('Saga Flow Tests', () => {
         const txnId = createRes.body.data.transaction.transactionId;
 
         await walletService.debit(sender.user.userId, 100, txnId);
-        await transactionService.onDebitSuccess(txnId, sender.user.userId, 100);
+        await transactionService.onDebitSuccess(txnId);
+        await ledgerService.processCredit(txnId);
         await transactionService.onCreditSuccess(txnId);
       }
 
