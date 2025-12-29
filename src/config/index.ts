@@ -22,7 +22,9 @@ export const config = {
 
   webhook: {
     timeoutMs: parseInt(process.env.WEBHOOK_TIMEOUT_MS || '5000', 10),
-    retryAttempts: parseInt(process.env.WEBHOOK_RETRY_ATTEMPTS || '3', 10),
+    retryAttempts: parseInt(process.env.WEBHOOK_RETRY_ATTEMPTS || '5', 10),
+    maxFailureCount: parseInt(process.env.WEBHOOK_MAX_FAILURE_COUNT || '10', 10),
+    maxPageLimit: parseInt(process.env.WEBHOOK_MAX_PAGE_LIMIT || '100', 10),
   },
 
   isProduction: process.env.NODE_ENV === 'production',

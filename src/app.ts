@@ -9,6 +9,7 @@ import { authRoutes } from './auth';
 import { walletRoutes } from './services/wallet';
 import { transactionRoutes } from './services/transaction';
 import { ledgerRoutes } from './services/ledger';
+import { webhookRoutes } from './services/webhook';
 
 export const createApp = (): Application => {
   const app = express();
@@ -32,6 +33,7 @@ export const createApp = (): Application => {
   app.use('/wallets', walletRoutes);
   app.use('/transactions', transactionRoutes);
   app.use('/ledger', ledgerRoutes);
+  app.use('/webhooks', webhookRoutes);
 
   // Root route
   app.get('/', (_req, res) => {

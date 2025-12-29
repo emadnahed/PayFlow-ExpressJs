@@ -5,6 +5,16 @@ import { eventBus } from './events/eventBus';
 import { registerWalletEventHandlers, unregisterWalletEventHandlers } from './services/wallet';
 import { registerTransactionEventHandlers, unregisterTransactionEventHandlers } from './services/transaction';
 import { registerLedgerEventHandlers, unregisterLedgerEventHandlers } from './services/ledger';
+import { registerWebhookEventHandlers, unregisterWebhookEventHandlers } from './services/webhook';
+import { registerNotificationEventHandlers, unregisterNotificationEventHandlers } from './services/notification';
+import {
+  startWebhookWorker,
+  stopWebhookWorker,
+  startNotificationWorker,
+  stopNotificationWorker,
+  closeWebhookQueue,
+  closeNotificationQueue,
+} from './queues';
 
 const app = createApp();
 
@@ -18,11 +28,18 @@ const startServer = async (): Promise<void> => {
     await eventBus.connect();
     console.log('Event bus connected successfully');
 
-    // Register event handlers (order matters: wallet -> transaction -> ledger)
+    // Register event handlers (order matters: wallet -> transaction -> ledger -> webhook -> notification)
     await registerWalletEventHandlers();
     await registerTransactionEventHandlers();
     await registerLedgerEventHandlers();
+    await registerWebhookEventHandlers();
+    await registerNotificationEventHandlers();
     console.log('Event handlers registered successfully');
+
+    // Start queue workers
+    startWebhookWorker();
+    startNotificationWorker();
+    console.log('Queue workers started successfully');
 
     // Start HTTP server
     const server = app.listen(config.port, () => {
@@ -39,7 +56,17 @@ const startServer = async (): Promise<void> => {
         console.log('HTTP server closed');
 
         try {
+          // Stop queue workers
+          await stopWebhookWorker();
+          await stopNotificationWorker();
+
+          // Close queues
+          await closeWebhookQueue();
+          await closeNotificationQueue();
+
           // Unregister event handlers
+          await unregisterNotificationEventHandlers();
+          await unregisterWebhookEventHandlers();
           await unregisterLedgerEventHandlers();
           await unregisterTransactionEventHandlers();
           await unregisterWalletEventHandlers();
