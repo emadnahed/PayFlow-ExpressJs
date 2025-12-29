@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { config } from './config';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import healthRoutes from './routes/health';
+import { authRoutes } from './auth';
 
 export const createApp = (): Application => {
   const app = express();
@@ -24,6 +25,7 @@ export const createApp = (): Application => {
 
   // Routes
   app.use('/health', healthRoutes);
+  app.use('/auth', authRoutes);
 
   // Root route
   app.get('/', (_req, res) => {
