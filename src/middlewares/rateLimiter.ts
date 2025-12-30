@@ -11,6 +11,7 @@ import { Request } from 'express';
 import { getRedisClient } from '../config/redis';
 import { config } from '../config';
 import { ErrorCode } from '../types/errors';
+import { logger } from '../observability';
 
 /**
  * Interface for authenticated request
@@ -39,7 +40,7 @@ const createStore = () => {
       prefix: 'rl:',
     });
   } catch {
-    console.warn('Failed to create Redis store for rate limiting, using memory store');
+    logger.warn('Failed to create Redis store for rate limiting, using memory store');
     return undefined;
   }
 };
@@ -91,6 +92,7 @@ export const authLimiter: RateLimitRequestHandler = rateLimit({
     const email = req.body?.email || '';
     return `${req.ip}:${email}`;
   },
+  validate: { xForwardedForHeader: false },
 });
 
 /**
@@ -115,6 +117,7 @@ export const transactionLimiter: RateLimitRequestHandler = rateLimit({
     // Use user ID if authenticated, otherwise IP
     return req.user?.userId || req.ip || 'unknown';
   },
+  validate: { xForwardedForHeader: false },
 });
 
 /**
@@ -138,6 +141,7 @@ export const apiLimiter: RateLimitRequestHandler = rateLimit({
   keyGenerator: (req: AuthenticatedRequest) => {
     return req.user?.userId || req.ip || 'unknown';
   },
+  validate: { xForwardedForHeader: false },
 });
 
 /**
@@ -161,4 +165,5 @@ export const webhookLimiter: RateLimitRequestHandler = rateLimit({
   keyGenerator: (req: AuthenticatedRequest) => {
     return `webhook:${req.user?.userId || req.ip || 'unknown'}`;
   },
+  validate: { xForwardedForHeader: false },
 });

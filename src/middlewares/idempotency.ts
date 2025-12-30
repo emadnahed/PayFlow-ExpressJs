@@ -9,6 +9,8 @@ import { Request, Response, NextFunction } from 'express';
 import { getRedisClient, isRedisConnected } from '../config/redis';
 import { config } from '../config';
 import { logger } from '../observability';
+import { ApiError } from './errorHandler';
+import { ErrorCode } from '../types/errors';
 
 /**
  * Interface for authenticated request
@@ -178,15 +180,12 @@ export const validateIdempotencyKey = (
   const keyPattern = /^[a-zA-Z0-9_-]{1,64}$/;
 
   if (!keyPattern.test(idempotencyKey)) {
-    res.status(400).json({
-      success: false,
-      error: {
-        code: 2003, // INVALID_INPUT
-        message:
-          'Invalid X-Idempotency-Key format. Must be alphanumeric with dashes/underscores, max 64 characters.',
-        timestamp: new Date().toISOString(),
-      },
-    });
+    next(
+      new ApiError(
+        ErrorCode.INVALID_INPUT,
+        'Invalid X-Idempotency-Key format. Must be alphanumeric with dashes/underscores, max 64 characters.'
+      )
+    );
     return;
   }
 

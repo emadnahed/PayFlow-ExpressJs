@@ -192,7 +192,7 @@ export class ApiError extends Error implements AppError {
       transaction: ErrorCode.TRANSACTION_NOT_FOUND,
       webhook: ErrorCode.WEBHOOK_NOT_FOUND,
     };
-    const code = codeMap[resource.toLowerCase()] || ErrorCode.VALIDATION_ERROR;
+    const code = codeMap[resource.toLowerCase()] || ErrorCode.RESOURCE_NOT_FOUND;
     return new ApiError(code, `${resource} not found`);
   }
 

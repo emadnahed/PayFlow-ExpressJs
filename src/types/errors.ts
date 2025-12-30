@@ -32,6 +32,7 @@ export enum ErrorCode {
   WEBHOOK_NOT_FOUND = 3007,
   USER_ALREADY_EXISTS = 3008,
   WALLET_ALREADY_EXISTS = 3009,
+  RESOURCE_NOT_FOUND = 3010,
 
   // Rate limiting errors (4xxx)
   RATE_LIMIT_EXCEEDED = 4001,
@@ -72,6 +73,7 @@ export const errorCodeToStatus: Record<ErrorCode, number> = {
   [ErrorCode.WEBHOOK_NOT_FOUND]: 404,
   [ErrorCode.USER_ALREADY_EXISTS]: 409,
   [ErrorCode.WALLET_ALREADY_EXISTS]: 409,
+  [ErrorCode.RESOURCE_NOT_FOUND]: 404,
 
   // Rate limiting errors -> 429
   [ErrorCode.RATE_LIMIT_EXCEEDED]: 429,

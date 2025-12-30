@@ -160,8 +160,8 @@ describe('Security E2E Tests', () => {
   });
 
   describe('API Documentation', () => {
-    it('should serve Swagger UI at /api-docs', async () => {
-      const response = await request(app).get('/api-docs/');
+    it('should serve Scalar API docs at /api-docs', async () => {
+      const response = await request(app).get('/api-docs');
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/html');
@@ -184,7 +184,7 @@ describe('Security E2E Tests', () => {
 
       expect(paths).toContain('/auth/register');
       expect(paths).toContain('/auth/login');
-      expect(paths).toContain('/wallets');
+      expect(paths).toContain('/wallets/me');
       expect(paths).toContain('/transactions');
       expect(paths).toContain('/health');
       expect(paths).toContain('/metrics');

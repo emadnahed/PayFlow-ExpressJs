@@ -21,7 +21,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(uuid|bullmq)/)'
+    'node_modules/(?!(uuid|bullmq|@scalar)/)'
   ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { useESM: false }],

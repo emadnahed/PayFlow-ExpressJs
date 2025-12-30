@@ -7,6 +7,7 @@
 
 import Redis from 'ioredis';
 import { config } from './index';
+import { logger } from '../observability';
 
 let redisClient: Redis | null = null;
 
@@ -29,11 +30,11 @@ export const getRedisClient = (): Redis => {
     });
 
     redisClient.on('error', (err) => {
-      console.error('Redis client error:', err);
+      logger.error({ err }, 'Redis client error');
     });
 
     redisClient.on('connect', () => {
-      console.log('Redis client connected');
+      logger.info('Redis client connected');
     });
   }
 

@@ -8,11 +8,11 @@
 import express, { Application } from 'express';
 import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
-import swaggerUi from 'swagger-ui-express';
+import { apiReference } from '@scalar/express-api-reference';
 import { config } from './config';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { globalLimiter, authLimiter, transactionLimiter } from './middlewares/rateLimiter';
-import { idempotencyMiddleware, validateIdempotencyKey } from './middlewares/idempotency';
+import { idempotencyForMutations, validateIdempotencyKey } from './middlewares/idempotency';
 import healthRoutes from './routes/health';
 import { authRoutes } from './auth';
 import { walletRoutes } from './services/wallet';
@@ -67,9 +67,11 @@ export const createApp = (): Application => {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
-          scriptSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
+          styleSrc: ["'self'", "'unsafe-inline'"], // Required for Scalar API docs
+          scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'], // Required for Scalar
           imgSrc: ["'self'", 'data:', 'https:'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          connectSrc: ["'self'", 'https:'],
         },
       },
       hsts: {
@@ -113,24 +115,27 @@ export const createApp = (): Application => {
     }
   });
 
-  // API Documentation (Swagger UI)
-  const openApiSpec = generateOpenAPI();
-  app.use(
-    '/api-docs',
-    swaggerUi.serve,
-    swaggerUi.setup(openApiSpec, {
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'PayFlow API Documentation',
-      swaggerOptions: {
-        persistAuthorization: true,
-      },
-    })
-  );
-
   // OpenAPI spec as JSON
+  const openApiSpec = generateOpenAPI();
   app.get('/api-docs.json', (_req, res) => {
     res.json(openApiSpec);
   });
+
+  // API Documentation (Scalar)
+  app.use(
+    '/api-docs',
+    apiReference({
+      spec: {
+        content: openApiSpec,
+      },
+      theme: 'purple',
+      layout: 'modern',
+      darkMode: true,
+      metaData: {
+        title: 'PayFlow API Documentation',
+      },
+    })
+  );
 
   // Auth routes with strict rate limiting
   if (!config.isTest) {
@@ -146,7 +151,7 @@ export const createApp = (): Application => {
   if (!config.isTest) {
     app.use('/transactions', transactionLimiter);
   }
-  app.use('/transactions', idempotencyMiddleware, transactionRoutes);
+  app.use('/transactions', idempotencyForMutations, transactionRoutes);
 
   app.use('/ledger', ledgerRoutes);
   app.use('/webhooks', webhookRoutes);
