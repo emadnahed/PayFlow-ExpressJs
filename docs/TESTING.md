@@ -85,42 +85,67 @@ redis-server --port 6380
 
 ```
 tests/
-├── unit/                       # Tier 1: Unit tests (no infrastructure)
-│   └── auth/
-│       └── auth.validation.test.ts
+├── unit/                           # Tier 1: Unit tests (no infrastructure)
+│   ├── auth/
+│   │   └── auth.validation.test.ts
+│   ├── config/                     # Configuration tests
+│   │   ├── database.test.ts        # MongoDB connection
+│   │   └── redis.test.ts           # Redis client
+│   ├── events/                     # Event system tests
+│   │   └── eventBus.test.ts        # Redis pub/sub event bus
+│   ├── middlewares/                # Middleware tests
+│   │   └── idempotency.test.ts     # Idempotency middleware
+│   ├── observability/              # Observability tests
+│   │   └── tracing.test.ts         # OpenTelemetry tracing
+│   ├── queues/                     # Queue tests
+│   │   ├── notification.queue.test.ts
+│   │   ├── notification.worker.test.ts
+│   │   ├── webhook.queue.test.ts
+│   │   └── webhook.worker.test.ts
+│   ├── services/                   # Service tests
+│   │   ├── ledger.events.test.ts   # Ledger event handlers
+│   │   ├── ledger.validation.test.ts
+│   │   ├── transaction.events.test.ts
+│   │   ├── transaction.state.test.ts
+│   │   ├── transaction.validation.test.ts
+│   │   ├── wallet.events.test.ts
+│   │   ├── wallet.validation.test.ts
+│   │   └── webhook.validation.test.ts
+│   └── validations/
+│       └── shared.validation.test.ts
 │
-├── integration/                # Tier 2: Integration tests
+├── integration/                    # Tier 2: Integration tests
 │   └── auth/
 │       └── auth.service.test.ts
 │
-├── e2e/                        # Tier 3: End-to-end tests
-│   ├── auth.test.ts           # Authentication flows
-│   ├── wallet.test.ts         # Wallet operations
-│   ├── transaction.test.ts    # Transaction flows
-│   ├── saga-flow.test.ts      # Saga pattern tests
-│   ├── compensation.test.ts   # Refund/rollback tests
-│   ├── webhook.test.ts        # Webhook delivery
-│   ├── ledger.test.ts         # Ledger operations
-│   ├── health.test.ts         # Health endpoints
-│   ├── metrics.test.ts        # Prometheus metrics
-│   ├── security.test.ts       # Security headers/CORS
-│   ├── idempotency.test.ts    # Idempotency keys
-│   └── connectivity.test.ts   # Database connectivity
+├── e2e/                            # Tier 3: End-to-end tests
+│   ├── auth.test.ts               # Authentication flows
+│   ├── wallet.test.ts             # Wallet operations
+│   ├── transaction.test.ts        # Transaction flows
+│   ├── saga-flow.test.ts          # Saga pattern tests
+│   ├── compensation.test.ts       # Refund/rollback tests
+│   ├── webhook.test.ts            # Webhook delivery
+│   ├── ledger.test.ts             # Ledger operations
+│   ├── health.test.ts             # Health endpoints
+│   ├── metrics.test.ts            # Prometheus metrics
+│   ├── security.test.ts           # Security headers/CORS
+│   ├── idempotency.test.ts        # Idempotency keys
+│   └── connectivity.test.ts       # Database connectivity
 │
-├── chaos/                      # Chaos engineering tests
-│   └── credit-failure.test.ts # Failure scenario testing
+├── chaos/                          # Chaos engineering tests
+│   └── credit-failure.test.ts     # Failure scenario testing
 │
-├── load/                       # Performance tests
-│   └── transaction.load.ts    # Load testing
+├── load/                           # Performance tests
+│   └── transaction.load.ts        # Load testing
 │
-├── helpers/                    # Test utilities
-│   ├── index.ts               # Helper exports
-│   ├── testApp.ts             # Express app instance
-│   ├── testDatabase.ts        # MongoDB connection
-│   ├── testEventBus.ts        # Redis connection
-│   └── testAuth.ts            # Auth test utilities
+├── helpers/                        # Test utilities
+│   ├── index.ts                   # Helper exports
+│   ├── testApp.ts                 # Express app instance
+│   ├── testDatabase.ts            # MongoDB connection
+│   ├── testEventBus.ts            # Redis connection
+│   └── testAuth.ts                # Auth test utilities
 │
-└── setup.ts                    # Jest global setup
+└── setup.ts                        # Jest global setup
 ```
 
 ---
@@ -188,6 +213,54 @@ describe('Validation Utils', () => {
   });
 });
 ```
+
+### Mocking Patterns for Unit Tests
+
+For modules with dependencies, use Jest mocks with module reset for isolation:
+
+```typescript
+// tests/unit/services/example.test.ts
+
+// Define mocks before jest.mock() calls
+const mockSubscribe = jest.fn().mockResolvedValue(undefined);
+const mockUnsubscribe = jest.fn().mockResolvedValue(undefined);
+
+// Mock dependencies
+jest.mock('../../../src/events/eventBus', () => ({
+  eventBus: {
+    subscribe: mockSubscribe,
+    unsubscribe: mockUnsubscribe,
+  },
+}));
+
+describe('Example Service', () => {
+  let registerHandlers: typeof import('../../../src/services/example').registerHandlers;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    jest.resetModules(); // Reset module state for isolation
+
+    // Dynamic import after reset to get fresh module
+    const module = await import('../../../src/services/example');
+    registerHandlers = module.registerHandlers;
+  });
+
+  it('should subscribe to events', async () => {
+    await registerHandlers();
+
+    expect(mockSubscribe).toHaveBeenCalledWith(
+      'EVENT_TYPE',
+      expect.any(Function)
+    );
+  });
+});
+```
+
+**Key Testing Patterns:**
+- Use `jest.resetModules()` for singleton modules (queues, workers)
+- Dynamic imports after reset to get fresh module state
+- Define mocks at top level before `jest.mock()` calls
+- Clear mocks in `beforeEach` for test isolation
 
 ### Integration Tests (Tier 2)
 
@@ -405,6 +478,27 @@ Coverage report is generated in `coverage/` directory:
 - `coverage/lcov-report/index.html` - HTML report
 - `coverage/lcov.info` - LCOV format for CI tools
 
+### Current Coverage Statistics
+
+| Module | Statements | Branches | Functions | Lines |
+|--------|------------|----------|-----------|-------|
+| Overall | 71.98% | 41.29% | 44.20% | 71.21% |
+| Events (eventBus) | 94.02% | 80% | 93.33% | 93.65% |
+| Observability (tracing) | 100% | 100% | 100% | 100% |
+| Queues (workers) | 60.57% | 47.82% | 70% | 59.8% |
+| Config (database/redis) | 89.85% | 67.64% | 76.92% | 88.7% |
+| Middlewares | 63.94% | 28.75% | 27.27% | 62.58% |
+
+**Fully Covered Modules (100% statements):**
+- `src/observability/tracing.ts`
+- `src/queues/notification.queue.ts`
+- `src/queues/webhook.queue.ts`
+- `src/services/ledger/ledger.events.ts`
+- `src/services/transaction/transaction.events.ts`
+- `src/services/wallet/wallet.events.ts`
+- `src/services/webhook/webhook.events.ts`
+- All validation modules
+
 ### Coverage Thresholds
 
 | Metric | Minimum |
@@ -413,6 +507,14 @@ Coverage report is generated in `coverage/` directory:
 | Functions | 70% |
 | Branches | 60% |
 | Statements | 70% |
+
+### Test Count
+
+| Category | Tests |
+|----------|-------|
+| Unit Tests | 462 |
+| E2E Tests | ~140 |
+| Total | 600+ |
 
 ---
 
@@ -600,7 +702,12 @@ npm test -- --runInBand
 ## Future Improvements
 
 - [ ] Add `mongodb-memory-server` for unit/integration tests without Docker
-- [ ] Add `ioredis-mock` for Redis mocking in unit tests
+- [x] ~~Add `ioredis-mock` for Redis mocking in unit tests~~ (Using Jest mocks instead)
 - [ ] Implement MSW (Mock Service Worker) for webhook testing
 - [ ] Add contract testing for API endpoints
 - [ ] Implement visual regression testing for API docs
+- [x] ~~Comprehensive unit tests for event handlers~~ (Completed)
+- [x] ~~Unit tests for queue modules and workers~~ (Completed)
+- [x] ~~Unit tests for configuration modules~~ (Completed)
+- [ ] Increase controller test coverage (currently E2E only)
+- [ ] Add mutation testing to verify test quality
