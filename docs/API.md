@@ -37,11 +37,33 @@ X-Idempotency-Key: unique-request-id-123
 
 | Range | Category | Examples |
 |-------|----------|----------|
-| 1xxx | Authentication | 1001: Unauthorized, 1002: Token expired |
-| 2xxx | Validation | 2001: Invalid input, 2002: Missing field |
-| 3xxx | Business Logic | 3001: Insufficient balance, 3002: User not found |
+| 1xxx | Authentication | 1001: Unauthorized, 1002: Token expired, 1005: Forbidden |
+| 2xxx | Validation | 2001: Invalid input, 2002: Missing field, 2003: Invalid format |
+| 3xxx | Business Logic | 3001: Insufficient balance, 3002: User not found, 3006: Duplicate |
 | 4xxx | Rate Limiting | 4001: Too many requests |
 | 5xxx | System | 5001: Internal error |
+
+### Complete Error Code Reference
+
+| Code | Name | HTTP Status |
+|------|------|-------------|
+| 1001 | UNAUTHORIZED | 401 |
+| 1002 | TOKEN_EXPIRED | 401 |
+| 1003 | INVALID_TOKEN | 401 |
+| 1004 | TOKEN_REVOKED | 401 |
+| 1005 | FORBIDDEN | 403 |
+| 2001 | VALIDATION_ERROR | 400 |
+| 2002 | MISSING_FIELD | 400 |
+| 2003 | INVALID_INPUT | 400 |
+| 3001 | INSUFFICIENT_BALANCE | 400 |
+| 3002 | USER_NOT_FOUND | 404 |
+| 3003 | WALLET_NOT_FOUND | 404 |
+| 3004 | TRANSACTION_NOT_FOUND | 404 |
+| 3005 | INVALID_TRANSACTION_STATE | 400 |
+| 3006 | DUPLICATE_RESOURCE | 409 |
+| 3007 | SELF_TRANSFER | 400 |
+| 4001 | RATE_LIMITED | 429 |
+| 5001 | INTERNAL_ERROR | 500 |
 
 ---
 
@@ -67,13 +89,15 @@ Register a new user account.
   "success": true,
   "data": {
     "user": {
-      "id": "507f1f77bcf86cd799439011",
+      "userId": "user_507f1f77bcf86cd799439011",
       "name": "John Doe",
       "email": "john@example.com",
-      "createdAt": "2024-01-15T10:30:00.000Z"
+      "isEmailVerified": false
     },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
   }
 }
 ```
@@ -95,9 +119,16 @@ Authenticate and receive tokens.
 {
   "success": true,
   "data": {
-    "user": { ... },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "user": {
+      "userId": "user_507f1f77bcf86cd799439011",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "isEmailVerified": false
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
   }
 }
 ```
@@ -148,12 +179,15 @@ Get current user's wallet.
 {
   "success": true,
   "data": {
-    "id": "507f1f77bcf86cd799439012",
-    "userId": "507f1f77bcf86cd799439011",
-    "balance": 1500.50,
-    "currency": "USD",
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T12:45:00.000Z"
+    "wallet": {
+      "walletId": "wal_507f1f77bcf86cd799439012",
+      "userId": "user_507f1f77bcf86cd799439011",
+      "balance": 1500.50,
+      "currency": "USD",
+      "isActive": true,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T12:45:00.000Z"
+    }
   }
 }
 ```
@@ -167,7 +201,8 @@ Deposit funds into wallet.
 **Request:**
 ```json
 {
-  "amount": 1000.00
+  "amount": 1000.00,
+  "idempotencyKey": "deposit_unique_key_123"
 }
 ```
 
@@ -176,12 +211,15 @@ Deposit funds into wallet.
 {
   "success": true,
   "data": {
-    "id": "507f1f77bcf86cd799439012",
-    "balance": 2500.50,
-    "currency": "USD"
+    "message": "Deposit successful",
+    "newBalance": 2500.50,
+    "operationId": "op_507f1f77bcf86cd799439013",
+    "idempotent": false
   }
 }
 ```
+
+**Note:** If the same `idempotencyKey` is used again, `idempotent: true` and `message: "Deposit already processed"`.
 
 ### GET /wallets/me/history
 
@@ -255,15 +293,16 @@ Create a new money transfer.
 {
   "success": true,
   "data": {
-    "id": "507f1f77bcf86cd799439030",
-    "transactionId": "txn_1705322400_abc123",
-    "senderId": "507f1f77bcf86cd799439011",
-    "receiverId": "507f1f77bcf86cd799439013",
-    "amount": 100.50,
-    "currency": "USD",
-    "status": "INITIATED",
-    "description": "Payment for services",
-    "createdAt": "2024-01-15T14:30:00.000Z"
+    "transaction": {
+      "transactionId": "txn_1705322400_abc123",
+      "senderId": "user_507f1f77bcf86cd799439011",
+      "receiverId": "user_507f1f77bcf86cd799439013",
+      "amount": 100.50,
+      "currency": "USD",
+      "status": "INITIATED",
+      "description": "Payment for services",
+      "createdAt": "2024-01-15T14:30:00.000Z"
+    }
   }
 }
 ```
@@ -354,16 +393,21 @@ Create a webhook subscription.
 {
   "success": true,
   "data": {
-    "id": "507f1f77bcf86cd799439040",
-    "userId": "507f1f77bcf86cd799439011",
-    "url": "https://example.com/webhook",
-    "events": ["TRANSACTION_COMPLETED", "TRANSACTION_FAILED"],
-    "isActive": true,
-    "failureCount": 0,
-    "createdAt": "2024-01-15T10:30:00.000Z"
+    "webhook": {
+      "webhookId": "whk_507f1f77bcf86cd799439040",
+      "url": "https://example.com/webhook",
+      "events": ["TRANSACTION_COMPLETED", "TRANSACTION_FAILED"],
+      "secret": "your-webhook-secret-min-16-chars",
+      "isActive": true,
+      "failureCount": 0,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
   }
 }
 ```
+
+**Note:** The `secret` is only returned on webhook creation for security.
 
 ### GET /webhooks
 
@@ -456,6 +500,81 @@ const isValid = crypto.timingSafeEqual(
   Buffer.from(signature),
   Buffer.from(expected)
 );
+```
+
+---
+
+## Ledger Simulation Endpoints (Test/Dev Only)
+
+These endpoints are only available in `test` and `development` environments.
+
+### GET /ledger/simulation
+
+Get current simulation configuration.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "simulation": {
+      "enabled": false,
+      "failureRate": 0,
+      "failTransactionIds": [],
+      "failureType": "ERROR"
+    }
+  }
+}
+```
+
+### POST /ledger/simulation
+
+Enable or disable failure simulation.
+
+**Request (Enable):**
+```json
+{
+  "enabled": true,
+  "failureRate": 0.5,
+  "failureType": "ERROR"
+}
+```
+
+**Request (Disable):**
+```json
+{
+  "enabled": false
+}
+```
+
+### POST /ledger/simulation/fail-transactions
+
+Add specific transaction IDs to fail.
+
+**Request:**
+```json
+{
+  "transactionIds": ["txn_abc123", "txn_def456"]
+}
+```
+
+### POST /ledger/simulation/reset
+
+Reset simulation to default state.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "simulation": {
+      "enabled": false,
+      "failureRate": 0,
+      "failTransactionIds": [],
+      "failureType": "ERROR"
+    }
+  }
+}
 ```
 
 ---

@@ -41,10 +41,14 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
-# JWT
+# JWT Authentication
 JWT_SECRET=your-super-secret-key-min-32-chars
-JWT_EXPIRES_IN=1h
-JWT_REFRESH_EXPIRES_IN=7d
+JWT_EXPIRES_IN=7d
+JWT_ACCESS_TOKEN_EXPIRES_IN=15m
+JWT_REFRESH_TOKEN_EXPIRES_IN=7d
+
+# API Configuration
+API_BODY_LIMIT=10kb
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
@@ -57,11 +61,31 @@ LOG_LEVEL=info
 
 ### Environment-Specific Configs
 
-| Variable | Development | Production |
-|----------|-------------|------------|
-| NODE_ENV | development | production |
-| LOG_LEVEL | debug | info |
-| RATE_LIMIT_MAX | 1000 | 100 |
+| Variable | Development | Test | Production |
+|----------|-------------|------|------------|
+| NODE_ENV | development | test | production |
+| LOG_LEVEL | debug | debug | info |
+| RATE_LIMIT_MAX | 1000 | 1000 | 100 |
+| MONGODB_PORT | 27017 | 27018 | 27017 |
+| REDIS_PORT | 6379 | 6380 | 6379 |
+| API_PORT | 3000 | 3001 | 3000 |
+
+### Port Configuration
+
+**Test Environment** uses different ports to avoid conflicts with development:
+
+| Service | Development Port | Test Port |
+|---------|-----------------|-----------|
+| API | 3000 | 3001 |
+| MongoDB | 27017 | 27018 |
+| Redis | 6379 | 6380 |
+
+When running E2E tests locally with Docker test containers:
+
+```bash
+# Set Redis port for tests
+REDIS_PORT=6380 npm run test:e2e
+```
 
 ## Docker Deployment
 

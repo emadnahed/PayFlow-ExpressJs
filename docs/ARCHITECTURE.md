@@ -102,13 +102,15 @@ PayFlow is an event-driven payment system built with Express.js, implementing th
        │                │
   Mark Complete    Refund Sender
        │                │
-       ▼         ┌──────┴──────┐
-┌─────────────┐  │             │
-│  COMPLETED  │  ▼             ▼
-└─────────────┘ ┌─────────────┐┌─────────────┐
-                │  REFUNDED   ││   FAILED    │
-                └─────────────┘└─────────────┘
+       ▼                ▼
+┌─────────────┐  ┌─────────────┐
+│  COMPLETED  │  │   FAILED    │
+└─────────────┘  └─────────────┘
 ```
+
+**Terminal States:** COMPLETED, FAILED (no further transitions allowed)
+
+**Note:** REFUNDING always transitions to FAILED after compensation completes (sender refunded).
 
 ## Component Responsibilities
 
@@ -139,6 +141,15 @@ PayFlow is an event-driven payment system built with Express.js, implementing th
 | MongoDB | Persistent data (users, wallets, transactions) |
 | Redis | Caching, sessions, pub/sub, rate limits |
 | BullMQ | Job queues for async processing |
+
+### BullMQ Queues
+
+| Queue Name | Purpose |
+|------------|---------|
+| `payflow-webhooks` | Webhook delivery with retries |
+| `payflow-notifications` | Async notification processing |
+
+**Note:** Queue names use hyphens (not colons) as BullMQ uses colons as Redis key separators.
 
 ## Saga Pattern Implementation
 

@@ -513,8 +513,8 @@ Coverage report is generated in `coverage/` directory:
 | Category | Tests |
 |----------|-------|
 | Unit Tests | 462 |
-| E2E Tests | ~140 |
-| Total | 600+ |
+| E2E Tests | 195 |
+| Total | 657+ |
 
 ---
 
@@ -593,6 +593,76 @@ const response = await request(app)
   .send({ receiverId, amount: 100 });
 
 // Verify compensation/refund occurred
+```
+
+---
+
+## Manual API Testing (cURL)
+
+A comprehensive cURL-based test script is available for manual API testing:
+
+```bash
+# Run against Docker test environment (port 3001)
+./scripts/test-api.sh
+
+# Run against local development (port 3000)
+API_URL=http://localhost:3000 ./scripts/test-api.sh
+
+# Enable verbose mode (shows request bodies)
+VERBOSE=true ./scripts/test-api.sh
+```
+
+### Test Script Features
+
+| Feature | Description |
+|---------|-------------|
+| **80 Tests** | Comprehensive coverage of all endpoints |
+| **CRUD Flows** | Create → Read → Update → Delete patterns |
+| **Pagination** | Tests limit, offset, and filters |
+| **Error Cases** | Validates error responses (401, 403, 404, 409) |
+| **jq Beautification** | JSON responses formatted for readability |
+| **Color Output** | Pass/fail indicators with ANSI colors |
+
+### Endpoints Tested
+
+- **Health**: `/health`, `/health/live`, `/health/ready`, `/metrics`
+- **Auth**: Register, login, refresh, profile
+- **Wallet**: Balance, deposit, history with pagination
+- **Transaction**: Create, list, filter, pagination
+- **Webhook**: Full CRUD, delivery logs, filters
+- **Ledger**: Simulation config, enable/disable, reset
+
+### Sample Output
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║            PayFlow API Test Suite (cURL)                  ║
+╚═══════════════════════════════════════════════════════════╝
+
+  Base URL: http://localhost:3001
+
+════════════════════════════════════════════════════════════
+  HEALTH CHECK ENDPOINTS
+════════════════════════════════════════════════════════════
+
+▶ TEST: Health check
+  → GET /health
+  Response (HTTP 200):
+    {
+      "status": "healthy",
+      "services": { "database": { "connected": true }, ... }
+    }
+  ✓ PASS: Health endpoint returns status (HTTP 200)
+
+════════════════════════════════════════════════════════════
+  TEST SUMMARY
+════════════════════════════════════════════════════════════
+
+  Total Tests:  80
+  Passed:       80
+  Failed:       0
+
+  All tests passed!
 ```
 
 ---
