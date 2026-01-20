@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Install dependencies only (better layer caching)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder

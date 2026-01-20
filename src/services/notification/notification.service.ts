@@ -6,6 +6,7 @@
 
 import crypto from 'crypto';
 
+import { logger } from '../../observability';
 import { enqueueNotification, NotificationType, NotificationJobData } from '../../queues';
 
 import { renderTemplate, NotificationTemplateData } from './notification.types';
@@ -46,7 +47,7 @@ export class NotificationService {
 
     await enqueueNotification(jobData);
 
-    console.log(`[Notification Service] Queued ${type} notification for user ${userId}`);
+    logger.debug({ type, userId, notificationId }, 'Notification queued');
     return notificationId;
   }
 

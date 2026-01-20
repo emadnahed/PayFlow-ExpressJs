@@ -71,7 +71,7 @@ INITIATED → DEBITED → CREDITED → COMPLETED
                 ↓
            (on failure)
                 ↓
-           REFUNDING → REFUNDED
+           REFUNDING → FAILED
 ```
 
 1. **Initiate** - Create transaction, validate inputs

@@ -82,8 +82,8 @@ services:
     image: mongo:7
     container_name: payflow-mongodb-primary
     command: mongod --replSet rs0 --bind_ip_all
-    ports:
-      - "27017:27017"
+    # Note: Port not exposed to host in production for security
+    # Access via internal Docker network only
     volumes:
       - mongodb_primary_data:/data/db
       - ./mongo/init-replica.js:/docker-entrypoint-initdb.d/init-replica.js:ro
@@ -125,8 +125,8 @@ services:
     image: redis:7-alpine
     container_name: payflow-redis
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    ports:
-      - "6379:6379"
+    # Note: Port not exposed to host in production for security
+    # Access via internal Docker network only
     volumes:
       - redis_data:/data
     networks:

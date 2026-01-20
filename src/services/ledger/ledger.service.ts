@@ -12,6 +12,7 @@
 import { eventBus } from '../../events/eventBus';
 import { ApiError } from '../../middlewares/errorHandler';
 import { Transaction } from '../../models/Transaction';
+import { logger } from '../../observability';
 import { EventType } from '../../types/events';
 import { walletService, CreditResult } from '../wallet/wallet.service';
 
@@ -55,7 +56,7 @@ export class LedgerService {
    * Called when DEBIT_SUCCESS event is received
    */
   async processCredit(transactionId: string): Promise<CreditResponse> {
-    console.log(`[Ledger Service] Processing credit for transaction ${transactionId}`);
+    logger.info({ transactionId }, 'Ledger Service processing credit');
 
     // Get transaction details
     let receiverId: string;
@@ -67,7 +68,7 @@ export class LedgerService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to get transaction details';
-      console.error(`[Ledger Service] Transaction lookup failed: ${errorMessage}`);
+      logger.error({ transactionId, error: errorMessage }, 'Ledger Service transaction lookup failed');
       return {
         success: false,
         transactionId,
@@ -84,8 +85,9 @@ export class LedgerService {
       // Perform the credit via wallet service
       const result: CreditResult = await walletService.credit(receiverId, amount, transactionId);
 
-      console.log(
-        `[Ledger Service] Credit successful for transaction ${transactionId}, new balance: ${result.newBalance}`
+      logger.info(
+        { transactionId, newBalance: result.newBalance },
+        'Ledger Service credit successful'
       );
 
       // Note: walletService.credit already publishes CREDIT_SUCCESS event
@@ -106,8 +108,9 @@ export class LedgerService {
             ? error.message
             : 'Unknown error during credit';
 
-      console.error(
-        `[Ledger Service] Credit failed for transaction ${transactionId}: ${errorMessage}`
+      logger.error(
+        { transactionId, error: errorMessage },
+        'Ledger Service credit failed'
       );
 
       // CRITICAL: Always publish CREDIT_FAILED to ensure saga can proceed to compensation.
@@ -143,8 +146,9 @@ export class LedgerService {
   async processCreditWithDetails(request: CreditRequest): Promise<CreditResponse> {
     const { transactionId, receiverId, amount } = request;
 
-    console.log(
-      `[Ledger Service] Processing direct credit for receiver ${receiverId}, amount: ${amount}`
+    logger.info(
+      { receiverId, amount, transactionId },
+      'Ledger Service processing direct credit'
     );
 
     try {

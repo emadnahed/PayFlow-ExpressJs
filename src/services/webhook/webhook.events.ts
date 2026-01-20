@@ -7,6 +7,7 @@
 
 import { eventBus } from '../../events/eventBus';
 import { Transaction } from '../../models/Transaction';
+import { logger } from '../../observability';
 import {
   EventType,
   BaseEvent,
@@ -24,7 +25,7 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
   const { transactionId } = event;
   const { senderId, receiverId, amount, currency } = event.payload;
 
-  console.log(`[Webhook Events] TRANSACTION_COMPLETED for txn ${transactionId}`);
+  logger.debug({ transactionId }, 'Webhook Events: TRANSACTION_COMPLETED');
 
   try {
     // Build payload directly from event data - no DB lookup needed
@@ -45,9 +46,9 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
       payload
     );
 
-    console.log(`[Webhook Events] Triggered ${count} webhooks for TRANSACTION_COMPLETED`);
+    logger.debug({ transactionId, count }, 'Webhook Events: Triggered webhooks for TRANSACTION_COMPLETED');
   } catch (error) {
-    console.error(`[Webhook Events] Error triggering webhooks for TRANSACTION_COMPLETED:`, error);
+    logger.error({ transactionId, err: error }, 'Webhook Events: Error triggering webhooks for TRANSACTION_COMPLETED');
   }
 }
 
@@ -59,7 +60,7 @@ async function handleTransactionFailed(event: TransactionFailedEvent): Promise<v
   const { transactionId } = event;
   const { reason, refunded } = event.payload;
 
-  console.log(`[Webhook Events] TRANSACTION_FAILED for txn ${transactionId}`);
+  logger.debug({ transactionId }, 'Webhook Events: TRANSACTION_FAILED');
 
   try {
     // Need to get transaction for amount/currency since not in event payload
@@ -84,9 +85,9 @@ async function handleTransactionFailed(event: TransactionFailedEvent): Promise<v
       payload
     );
 
-    console.log(`[Webhook Events] Triggered ${count} webhooks for TRANSACTION_FAILED`);
+    logger.debug({ transactionId, count }, 'Webhook Events: Triggered webhooks for TRANSACTION_FAILED');
   } catch (error) {
-    console.error(`[Webhook Events] Error triggering webhooks for TRANSACTION_FAILED:`, error);
+    logger.error({ transactionId, err: error }, 'Webhook Events: Error triggering webhooks for TRANSACTION_FAILED');
   }
 }
 
@@ -103,9 +104,9 @@ export async function registerWebhookEventHandlers(): Promise<void> {
       handleTransactionFailed(event as TransactionFailedEvent)
     );
 
-    console.log('[Webhook Events] Event handlers registered');
+    logger.info('Webhook event handlers registered');
   } catch (error) {
-    console.error('[Webhook Events] Failed to register event handlers:', error);
+    logger.error({ err: error }, 'Webhook Events: Failed to register event handlers');
     throw error;
   }
 }
@@ -117,8 +118,8 @@ export async function unregisterWebhookEventHandlers(): Promise<void> {
   try {
     await eventBus.unsubscribe(EventType.TRANSACTION_COMPLETED);
     await eventBus.unsubscribe(EventType.TRANSACTION_FAILED);
-    console.log('[Webhook Events] Event handlers unregistered');
+    logger.info('Webhook event handlers unregistered');
   } catch (error) {
-    console.error('[Webhook Events] Failed to unregister event handlers:', error);
+    logger.error({ err: error }, 'Webhook Events: Failed to unregister event handlers');
   }
 }

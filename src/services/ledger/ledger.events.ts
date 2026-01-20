@@ -7,6 +7,7 @@
  */
 
 import { eventBus } from '../../events/eventBus';
+import { logger } from '../../observability';
 import { EventType, BaseEvent, DebitSuccessEvent } from '../../types/events';
 
 import { ledgerService } from './ledger.service';
@@ -20,7 +21,7 @@ import { ledgerService } from './ledger.service';
 async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
   const txnId = event.transactionId;
 
-  console.log(`[Ledger Events] Handling DEBIT_SUCCESS for transaction ${txnId}`);
+  logger.info({ transactionId: txnId }, 'Ledger handling DEBIT_SUCCESS');
 
   try {
     // Process the credit via ledger service
@@ -31,18 +32,19 @@ async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
     const result = await ledgerService.processCredit(txnId);
 
     if (result.success) {
-      console.log(
-        `[Ledger Events] Credit completed for transaction ${txnId}, new balance: ${result.newBalance}`
+      logger.info(
+        { transactionId: txnId, newBalance: result.newBalance },
+        'Ledger credit completed'
       );
     } else {
-      console.log(`[Ledger Events] Credit failed for transaction ${txnId}: ${result.error}`);
+      logger.warn({ transactionId: txnId, error: result.error }, 'Ledger credit failed');
       // Note: ledgerService.processCredit handles publishing CREDIT_FAILED event
     }
   } catch (error) {
     // Unexpected error - log and let the event bus handle it
-    console.error(
-      `[Ledger Events] CRITICAL: Unexpected error handling DEBIT_SUCCESS for ${txnId}:`,
-      error
+    logger.error(
+      { transactionId: txnId, err: error },
+      'Ledger CRITICAL: Unexpected error handling DEBIT_SUCCESS'
     );
     throw error;
   }
@@ -60,9 +62,9 @@ export async function registerLedgerEventHandlers(): Promise<void> {
       handleDebitSuccess(event as DebitSuccessEvent)
     );
 
-    console.log('[Ledger Events] Event handlers registered');
+    logger.info('Ledger event handlers registered');
   } catch (error) {
-    console.error('[Ledger Events] Failed to register event handlers:', error);
+    logger.error({ err: error }, 'Ledger failed to register event handlers');
     throw error;
   }
 }
@@ -73,8 +75,8 @@ export async function registerLedgerEventHandlers(): Promise<void> {
 export async function unregisterLedgerEventHandlers(): Promise<void> {
   try {
     await eventBus.unsubscribe(EventType.DEBIT_SUCCESS);
-    console.log('[Ledger Events] Event handlers unregistered');
+    logger.info('Ledger event handlers unregistered');
   } catch (error) {
-    console.error('[Ledger Events] Failed to unregister event handlers:', error);
+    logger.error({ err: error }, 'Ledger failed to unregister event handlers');
   }
 }

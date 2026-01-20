@@ -6,6 +6,8 @@
 
 import { Queue, Job } from 'bullmq';
 
+import { logger } from '../observability';
+
 import { queueConnection, notificationJobOptions, QUEUE_NAMES } from './queue.config';
 
 /**
@@ -59,7 +61,7 @@ export function getNotificationQueue(): Queue<NotificationJobData, NotificationJ
         defaultJobOptions: notificationJobOptions,
       }
     );
-    console.log('[Notification Queue] Initialized');
+    logger.info('Notification queue initialized');
   }
   return notificationQueue;
 }
@@ -74,7 +76,7 @@ export async function enqueueNotification(
   const job = await queue.add(`notification:${data.type}`, data, {
     jobId: data.notificationId, // Use notification ID for idempotency
   });
-  console.log(`[Notification Queue] Job added: ${job.id} for user ${data.userId}`);
+  logger.debug({ jobId: job.id, userId: data.userId }, 'Notification job added');
   return job;
 }
 
@@ -85,7 +87,7 @@ export async function closeNotificationQueue(): Promise<void> {
   if (notificationQueue) {
     await notificationQueue.close();
     notificationQueue = null;
-    console.log('[Notification Queue] Closed');
+    logger.info('Notification queue closed');
   }
 }
 

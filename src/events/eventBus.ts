@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
 
 import { config } from '../config';
+import { logger } from '../observability';
 import { EventType, BaseEvent, EventHandler } from '../types/events';
 
 class EventBus {
@@ -27,7 +28,9 @@ class EventBus {
     };
 
     this.publisher = new Redis(redisConfig);
-    this.subscriber = new Redis(redisConfig);
+    // Subscriber needs enableReadyCheck: false because ioredis's ready check
+    // uses INFO command which is not allowed in subscriber mode
+    this.subscriber = new Redis({ ...redisConfig, enableReadyCheck: false });
 
     await Promise.all([
       new Promise<void>((resolve, reject) => {
@@ -49,16 +52,16 @@ class EventBus {
           try {
             await handler(event);
           } catch (error) {
-            console.error(`Error handling event ${event.eventType}:`, error);
+            logger.error({ err: error, eventType: event.eventType }, 'Error handling event');
           }
         }
       } catch (error) {
-        console.error('Error parsing event message:', error);
+        logger.error({ err: error }, 'Error parsing event message');
       }
     });
 
     this.isConnected = true;
-    console.log('Event bus connected to Redis');
+    logger.info('Event bus connected to Redis');
   }
 
   async disconnect(): Promise<void> {
@@ -78,14 +81,14 @@ class EventBus {
 
     this.handlers.clear();
     this.isConnected = false;
-    console.log('Event bus disconnected');
+    logger.info('Event bus disconnected');
   }
 
   async publish(event: BaseEvent): Promise<void> {
     if (!this.publisher || !this.isConnected) {
       // In test mode or when not connected, log and skip publishing
       if (process.env.NODE_ENV !== 'test') {
-        console.warn(`Event bus not connected, skipping publish: ${event.eventType}`);
+        logger.warn({ eventType: event.eventType }, 'Event bus not connected, skipping publish');
       }
       return;
     }
@@ -97,7 +100,7 @@ class EventBus {
     });
 
     await this.publisher.publish(channel, message);
-    console.log(`Event published: ${event.eventType} for transaction ${event.transactionId}`);
+    logger.debug({ eventType: event.eventType, transactionId: event.transactionId }, 'Event published');
   }
 
   async subscribe(eventType: EventType, handler: EventHandler): Promise<void> {
@@ -110,7 +113,7 @@ class EventBus {
     this.handlers.set(eventType, handlers);
 
     await this.subscriber.subscribe(eventType);
-    console.log(`Subscribed to event: ${eventType}`);
+    logger.debug({ eventType }, 'Subscribed to event');
   }
 
   async unsubscribe(eventType: EventType): Promise<void> {
@@ -120,7 +123,7 @@ class EventBus {
 
     this.handlers.delete(eventType);
     await this.subscriber.unsubscribe(eventType);
-    console.log(`Unsubscribed from event: ${eventType}`);
+    logger.debug({ eventType }, 'Unsubscribed from event');
   }
 
   getStatus(): { connected: boolean } {

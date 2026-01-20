@@ -6,6 +6,7 @@
  */
 
 import { config } from '../../config';
+import { logger } from '../../observability';
 
 export type FailureType = 'ERROR' | 'TIMEOUT';
 
@@ -43,7 +44,7 @@ class LedgerSimulation {
    */
   enable(options: Partial<Omit<FailureSimulationConfig, 'enabled'>> = {}): void {
     if (!this.isSimulationAllowed()) {
-      console.warn('[Ledger Simulation] Simulation not allowed in production environment');
+      logger.warn('Ledger Simulation not allowed in production environment');
       return;
     }
 
@@ -54,11 +55,14 @@ class LedgerSimulation {
       failureType: options.failureType ?? this.config.failureType,
     };
 
-    console.log('[Ledger Simulation] Enabled with config:', {
-      failureRate: this.config.failureRate,
-      failTransactionIds: Array.from(this.config.failTransactionIds),
-      failureType: this.config.failureType,
-    });
+    logger.debug(
+      {
+        failureRate: this.config.failureRate,
+        failTransactionIds: Array.from(this.config.failTransactionIds),
+        failureType: this.config.failureType,
+      },
+      'Ledger Simulation enabled'
+    );
   }
 
   /**
@@ -67,17 +71,19 @@ class LedgerSimulation {
   disable(): void {
     this.config.enabled = false;
     this.config.failTransactionIds.clear();
-    console.log('[Ledger Simulation] Disabled');
+    logger.debug('Ledger Simulation disabled');
   }
 
   /**
    * Add specific transaction IDs to fail
    */
   addFailingTransactionIds(transactionIds: string[]): void {
-    if (!this.isSimulationAllowed()) {return;}
+    if (!this.isSimulationAllowed()) {
+      return;
+    }
 
     transactionIds.forEach((id) => this.config.failTransactionIds.add(id));
-    console.log('[Ledger Simulation] Added failing transaction IDs:', transactionIds);
+    logger.debug({ transactionIds }, 'Ledger Simulation added failing transaction IDs');
   }
 
   /**
@@ -116,14 +122,15 @@ class LedgerSimulation {
 
     // Check if this specific transaction ID is marked to fail
     if (this.config.failTransactionIds.has(transactionId)) {
-      console.log(`[Ledger Simulation] Transaction ${transactionId} marked for failure`);
+      logger.debug({ transactionId }, 'Ledger Simulation: Transaction marked for failure');
       return true;
     }
 
     // Check failure rate (random failure)
     if (this.config.failureRate > 0 && Math.random() < this.config.failureRate) {
-      console.log(
-        `[Ledger Simulation] Transaction ${transactionId} failed by rate (${this.config.failureRate})`
+      logger.debug(
+        { transactionId, failureRate: this.config.failureRate },
+        'Ledger Simulation: Transaction failed by rate'
       );
       return true;
     }
@@ -142,7 +149,7 @@ class LedgerSimulation {
 
     if (this.config.failureType === 'TIMEOUT') {
       // Simulate timeout by delaying for a long time (will be interrupted by request timeout)
-      console.log(`[Ledger Simulation] Simulating timeout for transaction ${transactionId}`);
+      logger.debug({ transactionId }, 'Ledger Simulation: Simulating timeout');
       await new Promise((resolve) => setTimeout(resolve, 30000));
     }
 
@@ -160,7 +167,7 @@ class LedgerSimulation {
       failTransactionIds: new Set(),
       failureType: 'ERROR',
     };
-    console.log('[Ledger Simulation] Reset to defaults');
+    logger.debug('Ledger Simulation reset to defaults');
   }
 }
 

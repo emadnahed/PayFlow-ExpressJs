@@ -6,6 +6,7 @@
 
 import { eventBus } from '../../events/eventBus';
 import { User } from '../../models/User';
+import { logger } from '../../observability';
 import {
   EventType,
   BaseEvent,
@@ -32,14 +33,14 @@ async function handleTransactionInitiated(event: TransactionInitiatedEvent): Pro
   const { senderId, amount, currency } = event.payload;
   const { transactionId } = event;
 
-  console.log(`[Notification Events] TRANSACTION_INITIATED for txn ${transactionId}`);
+  logger.debug({ transactionId }, 'Notification Events: TRANSACTION_INITIATED');
 
   try {
     await notificationService.notifyTransactionInitiated(senderId, amount, currency, transactionId);
   } catch (error) {
-    console.error(
-      '[Notification Events] Error queueing TRANSACTION_INITIATED notification:',
-      error
+    logger.error(
+      { transactionId, err: error },
+      'Notification Events: Error queueing TRANSACTION_INITIATED notification'
     );
   }
 }
@@ -51,7 +52,7 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
   const { senderId, receiverId, amount, currency } = event.payload;
   const { transactionId } = event;
 
-  console.log(`[Notification Events] TRANSACTION_COMPLETED for txn ${transactionId}`);
+  logger.debug({ transactionId }, 'Notification Events: TRANSACTION_COMPLETED');
 
   try {
     const receiverName = await getUserName(receiverId);
@@ -63,9 +64,9 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
       transactionId
     );
   } catch (error) {
-    console.error(
-      '[Notification Events] Error queueing TRANSACTION_COMPLETED notification:',
-      error
+    logger.error(
+      { transactionId, err: error },
+      'Notification Events: Error queueing TRANSACTION_COMPLETED notification'
     );
   }
 }
@@ -76,7 +77,7 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
 async function handleTransactionFailed(event: TransactionFailedEvent): Promise<void> {
   const { transactionId } = event;
 
-  console.log(`[Notification Events] TRANSACTION_FAILED for txn ${transactionId}`);
+  logger.debug({ transactionId }, 'Notification Events: TRANSACTION_FAILED');
 
   try {
     // Get transaction details to find sender and amount
@@ -92,7 +93,7 @@ async function handleTransactionFailed(event: TransactionFailedEvent): Promise<v
       );
     }
   } catch (error) {
-    console.error('[Notification Events] Error queueing TRANSACTION_FAILED notification:', error);
+    logger.error({ transactionId, err: error }, 'Notification Events: Error queueing TRANSACTION_FAILED notification');
   }
 }
 
@@ -103,7 +104,7 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
   const { receiverId, amount } = event.payload;
   const { transactionId } = event;
 
-  console.log(`[Notification Events] CREDIT_SUCCESS for txn ${transactionId}`);
+  logger.debug({ transactionId }, 'Notification Events: CREDIT_SUCCESS');
 
   try {
     // Get transaction to find sender
@@ -121,7 +122,7 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
       );
     }
   } catch (error) {
-    console.error('[Notification Events] Error queueing CREDIT_RECEIVED notification:', error);
+    logger.error({ transactionId, err: error }, 'Notification Events: Error queueing CREDIT_RECEIVED notification');
   }
 }
 
@@ -146,9 +147,9 @@ export async function registerNotificationEventHandlers(): Promise<void> {
       handleCreditSuccess(event as CreditSuccessEvent)
     );
 
-    console.log('[Notification Events] Event handlers registered');
+    logger.info('Notification event handlers registered');
   } catch (error) {
-    console.error('[Notification Events] Failed to register event handlers:', error);
+    logger.error({ err: error }, 'Notification Events: Failed to register event handlers');
     throw error;
   }
 }
@@ -162,8 +163,8 @@ export async function unregisterNotificationEventHandlers(): Promise<void> {
     await eventBus.unsubscribe(EventType.TRANSACTION_COMPLETED);
     await eventBus.unsubscribe(EventType.TRANSACTION_FAILED);
     await eventBus.unsubscribe(EventType.CREDIT_SUCCESS);
-    console.log('[Notification Events] Event handlers unregistered');
+    logger.info('Notification event handlers unregistered');
   } catch (error) {
-    console.error('[Notification Events] Failed to unregister event handlers:', error);
+    logger.error({ err: error }, 'Notification Events: Failed to unregister event handlers');
   }
 }

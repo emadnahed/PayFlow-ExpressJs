@@ -104,7 +104,7 @@ export const notFoundHandler = (req: Request, res: Response, _next: NextFunction
 const statusToErrorCode: Record<number, ErrorCode> = {
   400: ErrorCode.VALIDATION_ERROR,
   401: ErrorCode.UNAUTHORIZED,
-  403: ErrorCode.UNAUTHORIZED, // Using UNAUTHORIZED for forbidden
+  403: ErrorCode.FORBIDDEN,
   404: ErrorCode.USER_NOT_FOUND, // Generic not found
   409: ErrorCode.DUPLICATE_TRANSACTION, // Generic conflict
   429: ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -158,6 +158,10 @@ export class ApiError extends Error implements AppError {
    */
   static unauthorized(message = 'Unauthorized'): ApiError {
     return new ApiError(ErrorCode.UNAUTHORIZED, message);
+  }
+
+  static forbidden(message = 'Forbidden'): ApiError {
+    return new ApiError(ErrorCode.FORBIDDEN, message);
   }
 
   static invalidToken(message = 'Invalid token'): ApiError {

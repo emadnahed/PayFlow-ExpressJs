@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { ApiError } from '../../middlewares/errorHandler';
 import { WebhookDelivery, IWebhookDelivery } from '../../models/WebhookDelivery';
 import { WebhookSubscription, IWebhookSubscription } from '../../models/WebhookSubscription';
+import { logger } from '../../observability';
 import { enqueueWebhookDelivery, WebhookJobData } from '../../queues';
 import { EventType } from '../../types/events';
 
@@ -73,7 +74,7 @@ export class WebhookService {
       secret: dto.secret || crypto.randomBytes(32).toString('hex'),
     });
 
-    console.log(`[Webhook Service] Created webhook ${webhook.webhookId} for user ${userId}`);
+    logger.info({ webhookId: webhook.webhookId, userId }, 'Webhook created');
     return webhook;
   }
 
@@ -164,7 +165,7 @@ export class WebhookService {
 
     await webhook.save();
 
-    console.log(`[Webhook Service] Updated webhook ${webhookId}`);
+    logger.info({ webhookId }, 'Webhook updated');
     return webhook;
   }
 
@@ -174,7 +175,7 @@ export class WebhookService {
   async deleteWebhook(webhookId: string, userId: string): Promise<void> {
     const webhook = await this.getWebhook(webhookId, userId);
     await WebhookSubscription.deleteOne({ webhookId: webhook.webhookId });
-    console.log(`[Webhook Service] Deleted webhook ${webhookId}`);
+    logger.info({ webhookId }, 'Webhook deleted');
   }
 
   /**
@@ -218,11 +219,11 @@ export class WebhookService {
     });
 
     if (webhooks.length === 0) {
-      console.log(`[Webhook Service] No webhooks subscribed to ${eventType}`);
+      logger.debug({ eventType }, 'No webhooks subscribed to event');
       return 0;
     }
 
-    console.log(`[Webhook Service] Triggering ${webhooks.length} webhooks for ${eventType}`);
+    logger.debug({ eventType, count: webhooks.length }, 'Triggering webhooks');
 
     // Create delivery records and enqueue jobs
     const jobs = webhooks.map(async (webhook) => {

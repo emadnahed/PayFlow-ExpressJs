@@ -10,8 +10,10 @@ import axios from 'axios';
 import { Worker, Job } from 'bullmq';
 
 import { config } from '../../config';
+import { ApiError } from '../../middlewares/errorHandler';
 import { WebhookDelivery } from '../../models/WebhookDelivery';
 import { WebhookSubscription } from '../../models/WebhookSubscription';
+import { logger } from '../../observability';
 import { queueConnection, QUEUE_NAMES, WORKER_CONCURRENCY } from '../queue.config';
 import { WebhookJobData, WebhookJobResult } from '../webhook.queue';
 
@@ -33,18 +35,20 @@ async function processWebhookJob(
 ): Promise<WebhookJobResult> {
   const { webhookId, deliveryId, payload } = job.data;
 
-  console.log(
-    `[Webhook Worker] Processing job ${job.id} for webhook ${webhookId}, attempt ${job.attemptsMade + 1}`
+  logger.info(
+    { jobId: job.id, webhookId, attempt: job.attemptsMade + 1 },
+    'Processing webhook delivery job'
   );
 
   // Get webhook subscription
   const subscription = await WebhookSubscription.findOne({ webhookId, isActive: true });
   if (!subscription) {
-    console.log(`[Webhook Worker] Webhook ${webhookId} not found or inactive, skipping`);
+    const errorMessage = ApiError.notFound('Webhook subscription').message;
+    logger.warn({ webhookId }, 'Webhook not found or inactive, skipping');
     await updateDeliveryStatus(deliveryId, 'FAILED', {
-      error: 'Webhook subscription not found or inactive',
+      error: errorMessage,
     });
-    return { success: false, error: 'Webhook not found' };
+    return { success: false, error: errorMessage };
   }
 
   // Sign the payload
@@ -63,8 +67,9 @@ async function processWebhookJob(
       validateStatus: (status) => status >= 200 && status < 300,
     });
 
-    console.log(
-      `[Webhook Worker] Delivery successful for ${deliveryId}: status ${response.status}`
+    logger.info(
+      { deliveryId, statusCode: response.status },
+      'Webhook delivery successful'
     );
 
     // Update delivery record
@@ -92,7 +97,7 @@ async function processWebhookJob(
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    console.error(`[Webhook Worker] Delivery failed for ${deliveryId}: ${errorMessage}`);
+    logger.error({ deliveryId, error: errorMessage }, 'Webhook delivery failed');
 
     // Update delivery as retrying (if more attempts remain) or failed
     const maxAttempts = job.opts.attempts || config.webhook.retryAttempts;
@@ -146,21 +151,25 @@ function truncateResponse(data: unknown): string {
  */
 function setupWorkerEvents(worker: Worker<WebhookJobData, WebhookJobResult>): void {
   worker.on('completed', (job, result) => {
-    console.log(`[Webhook Worker] Job ${job.id} completed: success=${result.success}`);
+    logger.info({ jobId: job.id, success: result.success }, 'Webhook job completed');
   });
 
   worker.on('failed', async (job, err) => {
-    if (!job) {return;}
+    if (!job) {
+      return;
+    }
 
     const maxAttempts = job.opts.attempts || config.webhook.retryAttempts;
     const isLastAttempt = job.attemptsMade >= maxAttempts;
-    console.error(
-      `[Webhook Worker] Job ${job.id} failed (attempt ${job.attemptsMade}/${maxAttempts}): ${err.message}`
+    logger.error(
+      { jobId: job.id, attempt: job.attemptsMade, maxAttempts, error: err.message },
+      'Webhook job failed'
     );
 
     if (isLastAttempt) {
-      console.log(
-        `[Webhook Worker] Job ${job.id} moved to dead letter queue after ${job.attemptsMade} attempts`
+      logger.warn(
+        { jobId: job.id, attempts: job.attemptsMade },
+        'Webhook job moved to dead letter queue'
       );
 
       // Check if we should disable the webhook after too many failures (configurable)
@@ -170,15 +179,16 @@ function setupWorkerEvents(worker: Worker<WebhookJobData, WebhookJobResult>): vo
           { webhookId: job.data.webhookId },
           { $set: { isActive: false } }
         );
-        console.log(
-          `[Webhook Worker] Webhook ${job.data.webhookId} disabled after ${subscription.failureCount} failures`
+        logger.warn(
+          { webhookId: job.data.webhookId, failureCount: subscription.failureCount },
+          'Webhook disabled due to excessive failures'
         );
       }
     }
   });
 
   worker.on('error', (err) => {
-    console.error('[Webhook Worker] Worker error:', err);
+    logger.error({ err }, 'Webhook worker error');
   });
 }
 
@@ -200,7 +210,7 @@ export function startWebhookWorker(): Worker<WebhookJobData, WebhookJobResult> {
   );
 
   setupWorkerEvents(webhookWorker);
-  console.log('[Webhook Worker] Started');
+  logger.info('Webhook worker started');
 
   return webhookWorker;
 }
@@ -212,7 +222,7 @@ export async function stopWebhookWorker(): Promise<void> {
   if (webhookWorker) {
     await webhookWorker.close();
     webhookWorker = null;
-    console.log('[Webhook Worker] Stopped');
+    logger.info('Webhook worker stopped');
   }
 }
 

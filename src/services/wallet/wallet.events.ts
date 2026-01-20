@@ -1,4 +1,5 @@
 import { eventBus } from '../../events/eventBus';
+import { logger } from '../../observability';
 import {
   EventType,
   TransactionInitiatedEvent,
@@ -16,13 +17,13 @@ async function handleTransactionInitiated(event: TransactionInitiatedEvent): Pro
   const { senderId, amount } = event.payload;
   const txnId = event.transactionId;
 
-  console.log(`[Wallet] Handling TRANSACTION_INITIATED for txn ${txnId}`);
+  logger.info({ transactionId: txnId }, 'Handling TRANSACTION_INITIATED');
 
   try {
     await walletService.debit(senderId, amount, txnId);
-    console.log(`[Wallet] Debit successful for txn ${txnId}`);
+    logger.info({ transactionId: txnId }, 'Debit successful');
   } catch (error) {
-    console.error(`[Wallet] Debit failed for txn ${txnId}:`, error);
+    logger.error({ transactionId: txnId, err: error }, 'Debit failed');
     // DEBIT_FAILED event is published by the service
   }
 }
@@ -34,13 +35,13 @@ async function handleRefundRequested(event: RefundRequestedEvent): Promise<void>
   const { senderId, amount } = event.payload;
   const txnId = event.transactionId;
 
-  console.log(`[Wallet] Handling REFUND_REQUESTED for txn ${txnId}`);
+  logger.info({ transactionId: txnId }, 'Handling REFUND_REQUESTED');
 
   try {
     await walletService.refund(senderId, amount, txnId);
-    console.log(`[Wallet] Refund successful for txn ${txnId}`);
+    logger.info({ transactionId: txnId }, 'Refund successful');
   } catch (error) {
-    console.error(`[Wallet] Refund failed for txn ${txnId}:`, error);
+    logger.error({ transactionId: txnId, err: error }, 'Refund failed');
     // REFUND_FAILED event is published by the service
   }
 }
@@ -52,7 +53,7 @@ async function handleRefundRequested(event: RefundRequestedEvent): Promise<void>
 async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
   // This will be handled by the Transaction Saga in Phase 4
   // The saga will call walletService.credit() directly after receiving DEBIT_SUCCESS
-  console.log(`[Wallet] DEBIT_SUCCESS received for txn ${event.transactionId}`);
+  logger.debug({ transactionId: event.transactionId }, 'DEBIT_SUCCESS received');
 }
 
 /**
@@ -75,9 +76,9 @@ export async function registerWalletEventHandlers(): Promise<void> {
       handleDebitSuccess(event as DebitSuccessEvent)
     );
 
-    console.log('[Wallet] Event handlers registered');
+    logger.info('Wallet event handlers registered');
   } catch (error) {
-    console.error('[Wallet] Failed to register event handlers:', error);
+    logger.error({ err: error }, 'Failed to register wallet event handlers');
     throw error;
   }
 }
@@ -90,8 +91,8 @@ export async function unregisterWalletEventHandlers(): Promise<void> {
     await eventBus.unsubscribe(EventType.TRANSACTION_INITIATED);
     await eventBus.unsubscribe(EventType.REFUND_REQUESTED);
     await eventBus.unsubscribe(EventType.DEBIT_SUCCESS);
-    console.log('[Wallet] Event handlers unregistered');
+    logger.info('Wallet event handlers unregistered');
   } catch (error) {
-    console.error('[Wallet] Failed to unregister event handlers:', error);
+    logger.error({ err: error }, 'Failed to unregister wallet event handlers');
   }
 }

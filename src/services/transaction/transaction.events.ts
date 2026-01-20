@@ -1,4 +1,5 @@
 import { eventBus } from '../../events/eventBus';
+import { logger } from '../../observability';
 import {
   EventType,
   BaseEvent,
@@ -20,12 +21,12 @@ import { transactionService } from './transaction.service';
 async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
   const txnId = event.transactionId;
 
-  console.log(`[Transaction Saga] DEBIT_SUCCESS for txn ${txnId}`);
+  logger.info({ transactionId: txnId }, 'Transaction Saga: DEBIT_SUCCESS');
 
   try {
     await transactionService.onDebitSuccess(txnId);
   } catch (error) {
-    console.error(`[Transaction Saga] CRITICAL: Error handling DEBIT_SUCCESS for ${txnId}:`, error);
+    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling DEBIT_SUCCESS');
     // Re-throw to allow higher-level error handling (e.g., dead-letter queue)
     throw error;
   }
@@ -38,12 +39,12 @@ async function handleDebitFailed(event: DebitFailedEvent): Promise<void> {
   const { reason } = event.payload;
   const txnId = event.transactionId;
 
-  console.log(`[Transaction Saga] DEBIT_FAILED for txn ${txnId}: ${reason}`);
+  logger.info({ transactionId: txnId, reason }, 'Transaction Saga: DEBIT_FAILED');
 
   try {
     await transactionService.onDebitFailed(txnId, reason);
   } catch (error) {
-    console.error(`[Transaction Saga] CRITICAL: Error handling DEBIT_FAILED for ${txnId}:`, error);
+    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling DEBIT_FAILED');
     throw error;
   }
 }
@@ -54,15 +55,12 @@ async function handleDebitFailed(event: DebitFailedEvent): Promise<void> {
 async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
   const txnId = event.transactionId;
 
-  console.log(`[Transaction Saga] CREDIT_SUCCESS for txn ${txnId}`);
+  logger.info({ transactionId: txnId }, 'Transaction Saga: CREDIT_SUCCESS');
 
   try {
     await transactionService.onCreditSuccess(txnId);
   } catch (error) {
-    console.error(
-      `[Transaction Saga] CRITICAL: Error handling CREDIT_SUCCESS for ${txnId}:`,
-      error
-    );
+    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling CREDIT_SUCCESS');
     throw error;
   }
 }
@@ -74,12 +72,12 @@ async function handleCreditFailed(event: CreditFailedEvent): Promise<void> {
   const { reason } = event.payload;
   const txnId = event.transactionId;
 
-  console.log(`[Transaction Saga] CREDIT_FAILED for txn ${txnId}: ${reason}`);
+  logger.info({ transactionId: txnId, reason }, 'Transaction Saga: CREDIT_FAILED');
 
   try {
     await transactionService.onCreditFailed(txnId, reason);
   } catch (error) {
-    console.error(`[Transaction Saga] CRITICAL: Error handling CREDIT_FAILED for ${txnId}:`, error);
+    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling CREDIT_FAILED');
     throw error;
   }
 }
@@ -90,15 +88,12 @@ async function handleCreditFailed(event: CreditFailedEvent): Promise<void> {
 async function handleRefundCompleted(event: RefundCompletedEvent): Promise<void> {
   const txnId = event.transactionId;
 
-  console.log(`[Transaction Saga] REFUND_COMPLETED for txn ${txnId}`);
+  logger.info({ transactionId: txnId }, 'Transaction Saga: REFUND_COMPLETED');
 
   try {
     await transactionService.onRefundCompleted(txnId);
   } catch (error) {
-    console.error(
-      `[Transaction Saga] CRITICAL: Error handling REFUND_COMPLETED for ${txnId}:`,
-      error
-    );
+    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling REFUND_COMPLETED');
     throw error;
   }
 }
@@ -129,9 +124,9 @@ export async function registerTransactionEventHandlers(): Promise<void> {
       handleRefundCompleted(event as RefundCompletedEvent)
     );
 
-    console.log('[Transaction Saga] Event handlers registered');
+    logger.info('Transaction Saga event handlers registered');
   } catch (error) {
-    console.error('[Transaction Saga] Failed to register event handlers:', error);
+    logger.error({ err: error }, 'Transaction Saga: Failed to register event handlers');
     throw error;
   }
 }
@@ -146,8 +141,8 @@ export async function unregisterTransactionEventHandlers(): Promise<void> {
     await eventBus.unsubscribe(EventType.CREDIT_SUCCESS);
     await eventBus.unsubscribe(EventType.CREDIT_FAILED);
     await eventBus.unsubscribe(EventType.REFUND_COMPLETED);
-    console.log('[Transaction Saga] Event handlers unregistered');
+    logger.info('Transaction Saga event handlers unregistered');
   } catch (error) {
-    console.error('[Transaction Saga] Failed to unregister event handlers:', error);
+    logger.error({ err: error }, 'Transaction Saga: Failed to unregister event handlers');
   }
 }

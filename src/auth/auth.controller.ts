@@ -1,29 +1,36 @@
-import { Response, NextFunction } from 'express';
-import { validationResult } from 'express-validator';
+import { Request, Response, NextFunction } from 'express';
+import { validationResult, ValidationError } from 'express-validator';
 
 import { ApiError } from '../middlewares/errorHandler';
 
 import { authService } from './auth.service';
 import { AuthRequest, RegisterDTO, LoginDTO } from './auth.types';
 
+/**
+ * Helper function to handle validation errors consistently
+ */
+function handleValidationErrors(req: Request): void {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const validationErrors = errors.array().reduce(
+      (acc, err: ValidationError) => {
+        const field = (err as { path: string }).path;
+        if (!acc[field]) {
+          acc[field] = [];
+        }
+        acc[field].push(err.msg);
+        return acc;
+      },
+      {} as Record<string, string[]>
+    );
+    throw ApiError.validationError('Validation failed', validationErrors);
+  }
+}
+
 export class AuthController {
   async register(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
-          errors.array().reduce(
-            (acc, err) => {
-              const field = (err as { path: string }).path;
-              if (!acc[field]) {acc[field] = [];}
-              acc[field].push(err.msg);
-              return acc;
-            },
-            {} as Record<string, string[]>
-          );
-        throw error;
-      }
+      handleValidationErrors(req);
 
       const dto: RegisterDTO = {
         name: req.body.name,
@@ -45,21 +52,7 @@ export class AuthController {
 
   async login(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
-          errors.array().reduce(
-            (acc, err) => {
-              const field = (err as { path: string }).path;
-              if (!acc[field]) {acc[field] = [];}
-              acc[field].push(err.msg);
-              return acc;
-            },
-            {} as Record<string, string[]>
-          );
-        throw error;
-      }
+      handleValidationErrors(req);
 
       const dto: LoginDTO = {
         email: req.body.email,
@@ -79,21 +72,7 @@ export class AuthController {
 
   async refresh(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
-          errors.array().reduce(
-            (acc, err) => {
-              const field = (err as { path: string }).path;
-              if (!acc[field]) {acc[field] = [];}
-              acc[field].push(err.msg);
-              return acc;
-            },
-            {} as Record<string, string[]>
-          );
-        throw error;
-      }
+      handleValidationErrors(req);
 
       const { refreshToken } = req.body;
       const tokens = await authService.refreshTokens(refreshToken);

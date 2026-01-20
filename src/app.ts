@@ -67,8 +67,8 @@ export const createApp = (): Application => {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"], // Required for Scalar API docs
-          scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'], // Required for Scalar
+          styleSrc: ["'self'", "'unsafe-inline'"], // Required for Scalar API docs inline styles
+          scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'], // Scalar scripts loaded from CDN
           imgSrc: ["'self'", 'data:', 'https:'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
           connectSrc: ["'self'", 'https:'],
@@ -86,9 +86,9 @@ export const createApp = (): Application => {
   // CORS with enhanced configuration
   app.use(cors(corsOptions));
 
-  // Request parsing
-  app.use(express.json({ limit: '10kb' })); // Limit body size
-  app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+  // Request parsing with configurable body size limit
+  app.use(express.json({ limit: config.api.bodyLimit }));
+  app.use(express.urlencoded({ extended: true, limit: config.api.bodyLimit }));
 
   // Observability middleware (applied early to capture all requests)
   app.use(correlationMiddleware);

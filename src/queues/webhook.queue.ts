@@ -6,6 +6,7 @@
 
 import { Queue, Job } from 'bullmq';
 
+import { logger } from '../observability';
 import { EventType } from '../types/events';
 
 import { queueConnection, webhookJobOptions, QUEUE_NAMES } from './queue.config';
@@ -51,7 +52,7 @@ export function getWebhookQueue(): Queue<WebhookJobData, WebhookJobResult> {
       connection: queueConnection,
       defaultJobOptions: webhookJobOptions,
     });
-    console.log('[Webhook Queue] Initialized');
+    logger.info('Webhook queue initialized');
   }
   return webhookQueue;
 }
@@ -66,7 +67,7 @@ export async function enqueueWebhookDelivery(
   const job = await queue.add(`webhook:${data.eventType}`, data, {
     jobId: data.deliveryId, // Use delivery ID for idempotency
   });
-  console.log(`[Webhook Queue] Job added: ${job.id} for webhook ${data.webhookId}`);
+  logger.debug({ jobId: job.id, webhookId: data.webhookId }, 'Webhook delivery job added');
   return job;
 }
 
@@ -77,7 +78,7 @@ export async function closeWebhookQueue(): Promise<void> {
   if (webhookQueue) {
     await webhookQueue.close();
     webhookQueue = null;
-    console.log('[Webhook Queue] Closed');
+    logger.info('Webhook queue closed');
   }
 }
 

@@ -1,12 +1,14 @@
 import mongoose from 'mongoose';
 
+import { logger } from '../observability';
+
 import { config } from './index';
 
 let isConnected = false;
 
 export const connectDatabase = async (): Promise<void> => {
   if (isConnected) {
-    console.log('Database already connected');
+    logger.debug('Database already connected');
     return;
   }
 
@@ -19,9 +21,9 @@ export const connectDatabase = async (): Promise<void> => {
       serverSelectionTimeoutMS: 5000, // Fail fast on connection issues
     });
     isConnected = true;
-    console.log(`MongoDB connected: ${conn.connection.host}`);
+    logger.info({ host: conn.connection.host }, 'MongoDB connected');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    logger.error({ err: error }, 'MongoDB connection error');
     throw error;
   }
 };
@@ -34,9 +36,9 @@ export const disconnectDatabase = async (): Promise<void> => {
   try {
     await mongoose.disconnect();
     isConnected = false;
-    console.log('MongoDB disconnected');
+    logger.info('MongoDB disconnected');
   } catch (error) {
-    console.error('MongoDB disconnection error:', error);
+    logger.error({ err: error }, 'MongoDB disconnection error');
     throw error;
   }
 };
@@ -49,12 +51,12 @@ export const getDatabaseStatus = (): { connected: boolean; readyState: number } 
 };
 
 mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
+  logger.error({ err }, 'MongoDB connection error');
   isConnected = false;
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected');
+  logger.info('MongoDB disconnected');
   isConnected = false;
 });
 

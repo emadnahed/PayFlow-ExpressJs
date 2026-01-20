@@ -6,6 +6,7 @@
 
 import { Worker, Job } from 'bullmq';
 
+import { logger } from '../../observability';
 import { NotificationJobData, NotificationJobResult } from '../notification.queue';
 import { queueConnection, QUEUE_NAMES, WORKER_CONCURRENCY } from '../queue.config';
 
@@ -25,14 +26,10 @@ async function processNotificationJob(
 ): Promise<NotificationJobResult> {
   const { userId, type, title, message, data } = job.data;
 
-  console.log(`[Notification Worker] Processing notification for user ${userId}`);
-  console.log(`[Notification Worker] Type: ${type}`);
-  console.log(`[Notification Worker] Title: ${title}`);
-  console.log(`[Notification Worker] Message: ${message}`);
-
-  if (data) {
-    console.log(`[Notification Worker] Data: ${JSON.stringify(data)}`);
-  }
+  logger.info(
+    { userId, type, title, message, data },
+    'Processing notification'
+  );
 
   // Simulate notification delivery
   // In production, implement actual delivery here:
@@ -52,18 +49,21 @@ async function processNotificationJob(
  */
 function setupWorkerEvents(worker: Worker<NotificationJobData, NotificationJobResult>): void {
   worker.on('completed', (job, result) => {
-    console.log(
-      `[Notification Worker] Job ${job.id} completed: sent=${result.sent}, channel=${result.channel}`
+    logger.info(
+      { jobId: job.id, sent: result.sent, channel: result.channel },
+      'Notification job completed'
     );
   });
 
   worker.on('failed', (job, err) => {
-    if (!job) {return;}
-    console.error(`[Notification Worker] Job ${job.id} failed: ${err.message}`);
+    if (!job) {
+      return;
+    }
+    logger.error({ jobId: job.id, error: err.message }, 'Notification job failed');
   });
 
   worker.on('error', (err) => {
-    console.error('[Notification Worker] Worker error:', err);
+    logger.error({ err }, 'Notification worker error');
   });
 }
 
@@ -85,7 +85,7 @@ export function startNotificationWorker(): Worker<NotificationJobData, Notificat
   );
 
   setupWorkerEvents(notificationWorker);
-  console.log('[Notification Worker] Started');
+  logger.info('Notification worker started');
 
   return notificationWorker;
 }
@@ -97,7 +97,7 @@ export async function stopNotificationWorker(): Promise<void> {
   if (notificationWorker) {
     await notificationWorker.close();
     notificationWorker = null;
-    console.log('[Notification Worker] Stopped');
+    logger.info('Notification worker stopped');
   }
 }
 

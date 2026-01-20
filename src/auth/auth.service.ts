@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 
 import { config } from '../config';
 import { ApiError } from '../middlewares/errorHandler';
@@ -9,9 +9,6 @@ import { Wallet } from '../models/Wallet';
 
 import { JWTPayload, TokenPair, RegisterDTO, LoginDTO, AuthResponse } from './auth.types';
 
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
-
 export class AuthService {
   generateTokens(user: IUser): TokenPair {
     const payload: JWTPayload = {
@@ -19,13 +16,16 @@ export class AuthService {
       email: user.email,
     };
 
-    const accessToken = jwt.sign(payload, config.jwt.secret, {
-      expiresIn: ACCESS_TOKEN_EXPIRY,
-    });
+    const accessTokenOptions: SignOptions = {
+      expiresIn: config.jwt.accessTokenExpiresIn as jwt.SignOptions['expiresIn'],
+    };
 
-    const refreshToken = jwt.sign(payload, config.jwt.secret, {
-      expiresIn: REFRESH_TOKEN_EXPIRY,
-    });
+    const refreshTokenOptions: SignOptions = {
+      expiresIn: config.jwt.refreshTokenExpiresIn as jwt.SignOptions['expiresIn'],
+    };
+
+    const accessToken = jwt.sign(payload, config.jwt.secret, accessTokenOptions);
+    const refreshToken = jwt.sign(payload, config.jwt.secret, refreshTokenOptions);
 
     return { accessToken, refreshToken };
   }

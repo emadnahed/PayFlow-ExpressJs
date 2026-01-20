@@ -15,6 +15,7 @@ export enum ErrorCode {
   INVALID_TOKEN = 1002,
   TOKEN_EXPIRED = 1003,
   INVALID_CREDENTIALS = 1004,
+  FORBIDDEN = 1005,
 
   // Validation errors (2xxx)
   VALIDATION_ERROR = 2001,
@@ -56,6 +57,7 @@ export const errorCodeToStatus: Record<ErrorCode, number> = {
   [ErrorCode.INVALID_TOKEN]: 401,
   [ErrorCode.TOKEN_EXPIRED]: 401,
   [ErrorCode.INVALID_CREDENTIALS]: 401,
+  [ErrorCode.FORBIDDEN]: 403,
 
   // Validation errors -> 400
   [ErrorCode.VALIDATION_ERROR]: 400,

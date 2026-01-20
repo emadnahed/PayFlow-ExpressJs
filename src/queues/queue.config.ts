@@ -53,10 +53,11 @@ export const notificationJobOptions: DefaultJobOptions = {
 
 /**
  * Queue names
+ * Note: BullMQ doesn't allow colons in queue names as they are used as Redis key separators
  */
 export const QUEUE_NAMES = {
-  WEBHOOKS: 'payflow:webhooks',
-  NOTIFICATIONS: 'payflow:notifications',
+  WEBHOOKS: 'payflow-webhooks',
+  NOTIFICATIONS: 'payflow-notifications',
 } as const;
 
 /**
