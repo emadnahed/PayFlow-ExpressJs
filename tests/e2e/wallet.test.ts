@@ -133,16 +133,14 @@ describe('Wallet Endpoints', () => {
       const response = await request(app)
         .post('/wallets/me/deposit')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send({ amount: 100.50 });
+        .send({ amount: 100.5 });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.newBalance).toBe(100.50);
+      expect(response.body.data.newBalance).toBe(100.5);
     });
 
     it('should reject deposit without authentication', async () => {
-      const response = await request(app)
-        .post('/wallets/me/deposit')
-        .send({ amount: 1000 });
+      const response = await request(app).post('/wallets/me/deposit').send({ amount: 1000 });
 
       expect(response.status).toBe(401);
     });
@@ -331,17 +329,19 @@ describe('Wallet Endpoints', () => {
       const { accessToken } = await createTestUser(app);
 
       // Make 5 concurrent deposits
-      const deposits = Array(5).fill(null).map(() =>
-        request(app)
-          .post('/wallets/me/deposit')
-          .set('Authorization', `Bearer ${accessToken}`)
-          .send({ amount: 100 })
-      );
+      const deposits = Array(5)
+        .fill(null)
+        .map(() =>
+          request(app)
+            .post('/wallets/me/deposit')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send({ amount: 100 })
+        );
 
       const results = await Promise.all(deposits);
 
       // All should succeed
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.status).toBe(200);
       });
 
@@ -428,9 +428,9 @@ describe('Wallet Service Operations', () => {
         .send({ amount: 100 });
 
       // Try to debit 500
-      await expect(
-        walletService.debit(user.userId, 500, 'txn_insufficient')
-      ).rejects.toThrow('Insufficient balance');
+      await expect(walletService.debit(user.userId, 500, 'txn_insufficient')).rejects.toThrow(
+        'Insufficient balance'
+      );
     });
   });
 

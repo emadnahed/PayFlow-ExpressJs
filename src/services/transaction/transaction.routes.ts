@@ -1,12 +1,15 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { transactionController } from './transaction.controller';
+
 import { authMiddleware } from '../../auth/auth.middleware';
+import { validateRequest } from '../../middlewares/validateRequest';
+
+import { transactionController } from './transaction.controller';
 import {
   createTransactionValidation,
   getTransactionValidation,
   listTransactionsValidation,
 } from './transaction.validation';
-import { validateRequest } from '../../middlewares/validateRequest';
+
 
 const router = Router();
 

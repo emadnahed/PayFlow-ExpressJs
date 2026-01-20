@@ -1,4 +1,5 @@
 // Initialize tracing first (before any other imports)
+// eslint-disable-next-line import/order
 import { initTracing, shutdownTracing, logger } from './observability';
 initTracing();
 
@@ -6,11 +7,6 @@ import { createApp } from './app';
 import { config } from './config';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { eventBus } from './events/eventBus';
-import { registerWalletEventHandlers, unregisterWalletEventHandlers } from './services/wallet';
-import { registerTransactionEventHandlers, unregisterTransactionEventHandlers } from './services/transaction';
-import { registerLedgerEventHandlers, unregisterLedgerEventHandlers } from './services/ledger';
-import { registerWebhookEventHandlers, unregisterWebhookEventHandlers } from './services/webhook';
-import { registerNotificationEventHandlers, unregisterNotificationEventHandlers } from './services/notification';
 import {
   startWebhookWorker,
   stopWebhookWorker,
@@ -19,6 +15,17 @@ import {
   closeWebhookQueue,
   closeNotificationQueue,
 } from './queues';
+import { registerLedgerEventHandlers, unregisterLedgerEventHandlers } from './services/ledger';
+import {
+  registerNotificationEventHandlers,
+  unregisterNotificationEventHandlers,
+} from './services/notification';
+import {
+  registerTransactionEventHandlers,
+  unregisterTransactionEventHandlers,
+} from './services/transaction';
+import { registerWalletEventHandlers, unregisterWalletEventHandlers } from './services/wallet';
+import { registerWebhookEventHandlers, unregisterWebhookEventHandlers } from './services/webhook';
 
 const app = createApp();
 
@@ -47,12 +54,15 @@ const startServer = async (): Promise<void> => {
 
     // Start HTTP server
     const server = app.listen(config.port, () => {
-      logger.info({
-        port: config.port,
-        env: config.nodeEnv,
-        healthCheck: `http://localhost:${config.port}/health`,
-        metricsEndpoint: `http://localhost:${config.port}/metrics`,
-      }, 'Server started');
+      logger.info(
+        {
+          port: config.port,
+          env: config.nodeEnv,
+          healthCheck: `http://localhost:${config.port}/health`,
+          metricsEndpoint: `http://localhost:${config.port}/metrics`,
+        },
+        'Server started'
+      );
     });
 
     // Graceful shutdown

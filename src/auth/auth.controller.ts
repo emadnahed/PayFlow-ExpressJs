@@ -1,8 +1,10 @@
 import { Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+
+import { ApiError } from '../middlewares/errorHandler';
+
 import { authService } from './auth.service';
 import { AuthRequest, RegisterDTO, LoginDTO } from './auth.types';
-import { ApiError } from '../middlewares/errorHandler';
 
 export class AuthController {
   async register(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -10,12 +12,16 @@ export class AuthController {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors.array().reduce((acc, err) => {
-          const field = (err as { path: string }).path;
-          if (!acc[field]) acc[field] = [];
-          acc[field].push(err.msg);
-          return acc;
-        }, {} as Record<string, string[]>);
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
+          errors.array().reduce(
+            (acc, err) => {
+              const field = (err as { path: string }).path;
+              if (!acc[field]) {acc[field] = [];}
+              acc[field].push(err.msg);
+              return acc;
+            },
+            {} as Record<string, string[]>
+          );
         throw error;
       }
 
@@ -42,12 +48,16 @@ export class AuthController {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors.array().reduce((acc, err) => {
-          const field = (err as { path: string }).path;
-          if (!acc[field]) acc[field] = [];
-          acc[field].push(err.msg);
-          return acc;
-        }, {} as Record<string, string[]>);
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
+          errors.array().reduce(
+            (acc, err) => {
+              const field = (err as { path: string }).path;
+              if (!acc[field]) {acc[field] = [];}
+              acc[field].push(err.msg);
+              return acc;
+            },
+            {} as Record<string, string[]>
+          );
         throw error;
       }
 
@@ -72,12 +82,16 @@ export class AuthController {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         const error = new ApiError(400, 'Validation failed');
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors.array().reduce((acc, err) => {
-          const field = (err as { path: string }).path;
-          if (!acc[field]) acc[field] = [];
-          acc[field].push(err.msg);
-          return acc;
-        }, {} as Record<string, string[]>);
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
+          errors.array().reduce(
+            (acc, err) => {
+              const field = (err as { path: string }).path;
+              if (!acc[field]) {acc[field] = [];}
+              acc[field].push(err.msg);
+              return acc;
+            },
+            {} as Record<string, string[]>
+          );
         throw error;
       }
 

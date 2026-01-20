@@ -1,7 +1,9 @@
 import { Response, NextFunction } from 'express';
+
+import { ApiError } from '../middlewares/errorHandler';
+
 import { authService } from './auth.service';
 import { AuthRequest } from './auth.types';
-import { ApiError } from '../middlewares/errorHandler';
 
 export const authMiddleware = async (
   req: AuthRequest,

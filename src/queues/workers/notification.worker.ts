@@ -5,8 +5,9 @@
  */
 
 import { Worker, Job } from 'bullmq';
-import { queueConnection, QUEUE_NAMES, WORKER_CONCURRENCY } from '../queue.config';
+
 import { NotificationJobData, NotificationJobResult } from '../notification.queue';
+import { queueConnection, QUEUE_NAMES, WORKER_CONCURRENCY } from '../queue.config';
 
 let notificationWorker: Worker<NotificationJobData, NotificationJobResult> | null = null;
 
@@ -19,7 +20,9 @@ let notificationWorker: Worker<NotificationJobData, NotificationJobResult> | nul
  * - Email services (SendGrid, SES)
  * - SMS services (Twilio)
  */
-async function processNotificationJob(job: Job<NotificationJobData, NotificationJobResult>): Promise<NotificationJobResult> {
+async function processNotificationJob(
+  job: Job<NotificationJobData, NotificationJobResult>
+): Promise<NotificationJobResult> {
   const { userId, type, title, message, data } = job.data;
 
   console.log(`[Notification Worker] Processing notification for user ${userId}`);
@@ -49,11 +52,13 @@ async function processNotificationJob(job: Job<NotificationJobData, Notification
  */
 function setupWorkerEvents(worker: Worker<NotificationJobData, NotificationJobResult>): void {
   worker.on('completed', (job, result) => {
-    console.log(`[Notification Worker] Job ${job.id} completed: sent=${result.sent}, channel=${result.channel}`);
+    console.log(
+      `[Notification Worker] Job ${job.id} completed: sent=${result.sent}, channel=${result.channel}`
+    );
   });
 
   worker.on('failed', (job, err) => {
-    if (!job) return;
+    if (!job) {return;}
     console.error(`[Notification Worker] Job ${job.id} failed: ${err.message}`);
   });
 

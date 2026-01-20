@@ -6,6 +6,7 @@ import {
   DebitSuccessEvent,
   BaseEvent,
 } from '../../types/events';
+
 import { walletService } from './wallet.service';
 
 /**
@@ -60,21 +61,18 @@ async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
 export async function registerWalletEventHandlers(): Promise<void> {
   try {
     // Subscribe to transaction initiated event to perform debit
-    await eventBus.subscribe(
-      EventType.TRANSACTION_INITIATED,
-      (event: BaseEvent) => handleTransactionInitiated(event as TransactionInitiatedEvent)
+    await eventBus.subscribe(EventType.TRANSACTION_INITIATED, (event: BaseEvent) =>
+      handleTransactionInitiated(event as TransactionInitiatedEvent)
     );
 
     // Subscribe to refund requests
-    await eventBus.subscribe(
-      EventType.REFUND_REQUESTED,
-      (event: BaseEvent) => handleRefundRequested(event as RefundRequestedEvent)
+    await eventBus.subscribe(EventType.REFUND_REQUESTED, (event: BaseEvent) =>
+      handleRefundRequested(event as RefundRequestedEvent)
     );
 
     // Subscribe to debit success (for logging/monitoring)
-    await eventBus.subscribe(
-      EventType.DEBIT_SUCCESS,
-      (event: BaseEvent) => handleDebitSuccess(event as DebitSuccessEvent)
+    await eventBus.subscribe(EventType.DEBIT_SUCCESS, (event: BaseEvent) =>
+      handleDebitSuccess(event as DebitSuccessEvent)
     );
 
     console.log('[Wallet] Event handlers registered');

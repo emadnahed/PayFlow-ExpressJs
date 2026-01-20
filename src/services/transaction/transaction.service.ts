@@ -1,9 +1,11 @@
 import crypto from 'crypto';
+
+import { eventBus } from '../../events/eventBus';
+import { ApiError } from '../../middlewares/errorHandler';
 import { Transaction, ITransaction } from '../../models/Transaction';
 import { TransactionStatus, EventType } from '../../types/events';
-import { ApiError } from '../../middlewares/errorHandler';
-import { eventBus } from '../../events/eventBus';
 import { walletService } from '../wallet/wallet.service';
+
 import { validateTransition, isTerminalState } from './transaction.state';
 
 // Note: walletService is still used for wallet existence validation in initiateTransaction
@@ -112,10 +114,7 @@ export class TransactionService {
     }
 
     const [transactions, total] = await Promise.all([
-      Transaction.find(query)
-        .sort({ createdAt: -1 })
-        .skip(offset)
-        .limit(Math.min(limit, 100)),
+      Transaction.find(query).sort({ createdAt: -1 }).skip(offset).limit(Math.min(limit, 100)),
       Transaction.countDocuments(query),
     ]);
 
@@ -145,11 +144,9 @@ export class TransactionService {
       updateData.completedAt = additionalData.completedAt;
     }
 
-    const updatedTransaction = await Transaction.findOneAndUpdate(
-      { transactionId },
-      updateData,
-      { new: true }
-    );
+    const updatedTransaction = await Transaction.findOneAndUpdate({ transactionId }, updateData, {
+      new: true,
+    });
 
     if (!updatedTransaction) {
       throw new ApiError(404, 'Transaction not found');

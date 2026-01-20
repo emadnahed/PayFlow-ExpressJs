@@ -256,8 +256,7 @@ describe('Ledger Service Tests', () => {
 
   describe('Simulation API', () => {
     it('should get current simulation config', async () => {
-      const response = await request(app)
-        .get('/ledger/simulation');
+      const response = await request(app).get('/ledger/simulation');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -284,19 +283,15 @@ describe('Ledger Service Tests', () => {
 
     it('should disable simulation via API', async () => {
       // First enable
-      await request(app)
-        .post('/ledger/simulation')
-        .send({
-          enabled: true,
-          failureRate: 0.5,
-        });
+      await request(app).post('/ledger/simulation').send({
+        enabled: true,
+        failureRate: 0.5,
+      });
 
       // Then disable
-      const response = await request(app)
-        .post('/ledger/simulation')
-        .send({
-          enabled: false,
-        });
+      const response = await request(app).post('/ledger/simulation').send({
+        enabled: false,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.data.simulation.enabled).toBe(false);
@@ -304,11 +299,9 @@ describe('Ledger Service Tests', () => {
 
     it('should add failing transaction IDs via API', async () => {
       // First enable simulation
-      await request(app)
-        .post('/ledger/simulation')
-        .send({
-          enabled: true,
-        });
+      await request(app).post('/ledger/simulation').send({
+        enabled: true,
+      });
 
       const response = await request(app)
         .post('/ledger/simulation/fail-transactions')
@@ -332,8 +325,7 @@ describe('Ledger Service Tests', () => {
         });
 
       // Reset
-      const response = await request(app)
-        .post('/ledger/simulation/reset');
+      const response = await request(app).post('/ledger/simulation/reset');
 
       expect(response.status).toBe(200);
       expect(response.body.data.simulation.enabled).toBe(false);
@@ -342,11 +334,9 @@ describe('Ledger Service Tests', () => {
     });
 
     it('should validate simulation config input', async () => {
-      const response = await request(app)
-        .post('/ledger/simulation')
-        .send({
-          enabled: 'not-a-boolean',
-        });
+      const response = await request(app).post('/ledger/simulation').send({
+        enabled: 'not-a-boolean',
+      });
 
       expect(response.status).toBe(400);
     });

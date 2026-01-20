@@ -1,10 +1,13 @@
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+
+import jwt from 'jsonwebtoken';
+
 import { config } from '../config';
+import { ApiError } from '../middlewares/errorHandler';
 import { User, IUser } from '../models/User';
 import { Wallet } from '../models/Wallet';
+
 import { JWTPayload, TokenPair, RegisterDTO, LoginDTO, AuthResponse } from './auth.types';
-import { ApiError } from '../middlewares/errorHandler';
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';

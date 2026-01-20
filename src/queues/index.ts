@@ -3,7 +3,13 @@
  */
 
 // Configuration
-export { queueConnection, webhookJobOptions, notificationJobOptions, QUEUE_NAMES, WORKER_CONCURRENCY } from './queue.config';
+export {
+  queueConnection,
+  webhookJobOptions,
+  notificationJobOptions,
+  QUEUE_NAMES,
+  WORKER_CONCURRENCY,
+} from './queue.config';
 
 // Webhook Queue
 export {

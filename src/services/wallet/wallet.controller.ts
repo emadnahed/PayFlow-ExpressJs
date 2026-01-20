@@ -1,8 +1,10 @@
 import { Response, NextFunction } from 'express';
-import { walletService } from './wallet.service';
+
 import { AuthRequest } from '../../auth/auth.types';
 import { ApiError } from '../../middlewares/errorHandler';
 import { IWalletOperation } from '../../models/WalletOperation';
+
+import { walletService } from './wallet.service';
 
 export class WalletController {
   /**
@@ -106,7 +108,10 @@ export class WalletController {
       }
 
       const limit = parseInt(req.query.limit as string) || 20;
-      const operations = await walletService.getOperationHistory(req.user.userId, Math.min(limit, 100));
+      const operations = await walletService.getOperationHistory(
+        req.user.userId,
+        Math.min(limit, 100)
+      );
 
       res.status(200).json({
         success: true,

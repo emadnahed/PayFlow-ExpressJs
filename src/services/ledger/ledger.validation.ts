@@ -8,9 +8,7 @@ import { body } from 'express-validator';
  * Validation rules for simulation configuration
  */
 export const simulationConfigValidation = [
-  body('enabled')
-    .isBoolean()
-    .withMessage('enabled must be a boolean'),
+  body('enabled').isBoolean().withMessage('enabled must be a boolean'),
 
   body('failureRate')
     .optional()

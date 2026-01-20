@@ -5,13 +5,14 @@
  * to ensure distributed rate limiting across multiple instances.
  */
 
+import { Request } from 'express';
 import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
-import { Request } from 'express';
-import { getRedisClient } from '../config/redis';
+
 import { config } from '../config';
-import { ErrorCode } from '../types/errors';
+import { getRedisClient } from '../config/redis';
 import { logger } from '../observability';
+import { ErrorCode } from '../types/errors';
 
 /**
  * Interface for authenticated request

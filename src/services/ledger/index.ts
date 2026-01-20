@@ -21,10 +21,7 @@ export {
 } from './ledger.simulation';
 
 // Event handlers
-export {
-  registerLedgerEventHandlers,
-  unregisterLedgerEventHandlers,
-} from './ledger.events';
+export { registerLedgerEventHandlers, unregisterLedgerEventHandlers } from './ledger.events';
 
 // Controller
 export { ledgerController } from './ledger.controller';

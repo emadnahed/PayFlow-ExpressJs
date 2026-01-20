@@ -65,4 +65,7 @@ const walletOperationSchema = new Schema<IWalletOperation>(
 walletOperationSchema.index({ walletId: 1, createdAt: -1 });
 walletOperationSchema.index({ transactionId: 1, type: 1 });
 
-export const WalletOperation = mongoose.model<IWalletOperation>('WalletOperation', walletOperationSchema);
+export const WalletOperation = mongoose.model<IWalletOperation>(
+  'WalletOperation',
+  walletOperationSchema
+);

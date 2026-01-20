@@ -5,7 +5,9 @@
  */
 
 import crypto from 'crypto';
+
 import { enqueueNotification, NotificationType, NotificationJobData } from '../../queues';
+
 import { renderTemplate, NotificationTemplateData } from './notification.types';
 
 export class NotificationService {

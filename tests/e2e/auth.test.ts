@@ -30,9 +30,7 @@ describe('Auth Endpoints', () => {
     };
 
     it('should register a new user successfully', async () => {
-      const response = await request(app)
-        .post('/auth/register')
-        .send(validUser);
+      const response = await request(app).post('/auth/register').send(validUser);
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -44,9 +42,7 @@ describe('Auth Endpoints', () => {
     });
 
     it('should create a wallet for new user', async () => {
-      const response = await request(app)
-        .post('/auth/register')
-        .send(validUser);
+      const response = await request(app).post('/auth/register').send(validUser);
 
       expect(response.status).toBe(201);
 
@@ -59,9 +55,7 @@ describe('Auth Endpoints', () => {
     it('should reject duplicate email', async () => {
       await request(app).post('/auth/register').send(validUser);
 
-      const response = await request(app)
-        .post('/auth/register')
-        .send(validUser);
+      const response = await request(app).post('/auth/register').send(validUser);
 
       expect(response.status).toBe(409);
       expect(response.body.success).toBe(false);
@@ -93,11 +87,9 @@ describe('Auth Endpoints', () => {
     });
 
     it('should reject missing required fields', async () => {
-      const response = await request(app)
-        .post('/auth/register')
-        .send({
-          name: 'John',
-        });
+      const response = await request(app).post('/auth/register').send({
+        name: 'John',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -127,12 +119,10 @@ describe('Auth Endpoints', () => {
     });
 
     it('should login with valid credentials', async () => {
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const response = await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -142,12 +132,10 @@ describe('Auth Endpoints', () => {
     });
 
     it('should reject invalid password', async () => {
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123',
-        });
+      const response = await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: 'WrongPassword123',
+      });
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -155,36 +143,30 @@ describe('Auth Endpoints', () => {
     });
 
     it('should reject non-existent email', async () => {
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: 'nonexistent@example.com',
-          password: 'Password123',
-        });
+      const response = await request(app).post('/auth/login').send({
+        email: 'nonexistent@example.com',
+        password: 'Password123',
+      });
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should update lastLoginAt on successful login', async () => {
-      await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       const user = await User.findOne({ email: testUser.email });
       expect(user?.lastLoginAt).toBeDefined();
     });
 
     it('should be case-insensitive for email', async () => {
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email.toUpperCase(),
-          password: testUser.password,
-        });
+      const response = await request(app).post('/auth/login').send({
+        email: testUser.email.toUpperCase(),
+        password: testUser.password,
+      });
 
       expect(response.status).toBe(200);
     });
@@ -194,21 +176,17 @@ describe('Auth Endpoints', () => {
     let refreshToken: string;
 
     beforeEach(async () => {
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send({
-          name: 'Refresh User',
-          email: 'refresh@example.com',
-          password: 'Password123',
-        });
+      const registerResponse = await request(app).post('/auth/register').send({
+        name: 'Refresh User',
+        email: 'refresh@example.com',
+        password: 'Password123',
+      });
 
       refreshToken = registerResponse.body.data.tokens.refreshToken;
     });
 
     it('should refresh tokens with valid refresh token', async () => {
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({ refreshToken });
+      const response = await request(app).post('/auth/refresh').send({ refreshToken });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -226,9 +204,7 @@ describe('Auth Endpoints', () => {
     });
 
     it('should reject missing refresh token', async () => {
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({});
+      const response = await request(app).post('/auth/refresh').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -244,9 +220,7 @@ describe('Auth Endpoints', () => {
     };
 
     beforeEach(async () => {
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await request(app).post('/auth/register').send(testUser);
 
       accessToken = registerResponse.body.data.tokens.accessToken;
     });
@@ -352,12 +326,10 @@ describe('Auth Endpoints', () => {
       await User.updateOne({ email: testUser.email }, { isActive: false });
 
       // Try to login
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const response = await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
@@ -366,9 +338,7 @@ describe('Auth Endpoints', () => {
 
     it('should reject protected route access for deactivated user', async () => {
       // Register user and get token
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await request(app).post('/auth/register').send(testUser);
 
       const accessToken = registerResponse.body.data.tokens.accessToken;
 
@@ -386,9 +356,7 @@ describe('Auth Endpoints', () => {
 
     it('should reject token refresh for deactivated user', async () => {
       // Register user and get refresh token
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await request(app).post('/auth/register').send(testUser);
 
       const refreshToken = registerResponse.body.data.tokens.refreshToken;
 
@@ -396,9 +364,7 @@ describe('Auth Endpoints', () => {
       await User.updateOne({ email: testUser.email }, { isActive: false });
 
       // Try to refresh token
-      const response = await request(app)
-        .post('/auth/refresh')
-        .send({ refreshToken });
+      const response = await request(app).post('/auth/refresh').send({ refreshToken });
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
@@ -413,9 +379,7 @@ describe('Auth Endpoints', () => {
     };
 
     it('should never return password in registration response', async () => {
-      const response = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const response = await request(app).post('/auth/register').send(testUser);
 
       expect(response.status).toBe(201);
       expect(response.body.data.user).not.toHaveProperty('password');
@@ -425,12 +389,10 @@ describe('Auth Endpoints', () => {
     it('should never return password in login response', async () => {
       await request(app).post('/auth/register').send(testUser);
 
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const response = await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.data.user).not.toHaveProperty('password');
@@ -438,9 +400,7 @@ describe('Auth Endpoints', () => {
     });
 
     it('should never return password in /auth/me response', async () => {
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await request(app).post('/auth/register').send(testUser);
 
       const response = await request(app)
         .get('/auth/me')
@@ -460,9 +420,7 @@ describe('Auth Endpoints', () => {
         password: 'Password123',
       };
 
-      const response = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const response = await request(app).post('/auth/register').send(testUser);
 
       const accessToken = response.body.data.tokens.accessToken;
       const payload = jwt.decode(accessToken) as any;
@@ -482,9 +440,7 @@ describe('Auth Endpoints', () => {
         password: 'Password123',
       };
 
-      const response = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const response = await request(app).post('/auth/register').send(testUser);
 
       const accessToken = response.body.data.tokens.accessToken;
       const refreshToken = response.body.data.tokens.refreshToken;
@@ -511,9 +467,7 @@ describe('Auth Endpoints', () => {
 
     it('should complete full auth lifecycle: register -> login -> access -> refresh -> access', async () => {
       // Step 1: Register
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await request(app).post('/auth/register').send(testUser);
 
       expect(registerResponse.status).toBe(201);
       const { userId } = registerResponse.body.data.user;
@@ -528,12 +482,10 @@ describe('Auth Endpoints', () => {
       expect(firstAccess.body.data.user.userId).toBe(userId);
 
       // Step 3: Login with same credentials
-      const loginResponse = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const loginResponse = await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       expect(loginResponse.status).toBe(200);
       accessToken = loginResponse.body.data.tokens.accessToken;
@@ -547,9 +499,7 @@ describe('Auth Endpoints', () => {
       expect(secondAccess.status).toBe(200);
 
       // Step 5: Refresh tokens
-      const refreshResponse = await request(app)
-        .post('/auth/refresh')
-        .send({ refreshToken });
+      const refreshResponse = await request(app).post('/auth/refresh').send({ refreshToken });
 
       expect(refreshResponse.status).toBe(200);
       const newAccessToken = refreshResponse.body.data.tokens.accessToken;
@@ -571,19 +521,15 @@ describe('Auth Endpoints', () => {
 
     it('should maintain user data consistency across all endpoints', async () => {
       // Register
-      const registerResponse = await request(app)
-        .post('/auth/register')
-        .send(testUser);
+      const registerResponse = await request(app).post('/auth/register').send(testUser);
 
       const registeredUser = registerResponse.body.data.user;
 
       // Login
-      const loginResponse = await request(app)
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const loginResponse = await request(app).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       const loggedInUser = loginResponse.body.data.user;
 

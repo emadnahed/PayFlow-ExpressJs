@@ -1,8 +1,10 @@
-import { NodeSDK } from '@opentelemetry/sdk-node';
+import { trace, SpanStatusCode, Span, Tracer } from '@opentelemetry/api';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { trace, SpanStatusCode, Span, Tracer } from '@opentelemetry/api';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+
 import { config } from '../config';
+
 import { logger } from './logger';
 
 let sdk: NodeSDK | null = null;
@@ -18,8 +20,7 @@ export const initTracing = (): void => {
     return;
   }
 
-  const otlpEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces';
+  const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces';
 
   try {
     sdk = new NodeSDK({

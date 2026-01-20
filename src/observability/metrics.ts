@@ -1,4 +1,5 @@
 import { Registry, Counter, Histogram, Gauge, collectDefaultMetrics } from 'prom-client';
+
 import { config } from '../config';
 
 /**

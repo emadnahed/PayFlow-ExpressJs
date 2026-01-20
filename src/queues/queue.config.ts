@@ -5,6 +5,7 @@
  */
 
 import { ConnectionOptions, DefaultJobOptions } from 'bullmq';
+
 import { config } from '../config';
 
 /**

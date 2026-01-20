@@ -1,5 +1,7 @@
-import mongoose, { Document, Schema } from 'mongoose';
 import crypto from 'crypto';
+
+import mongoose, { Document, Schema } from 'mongoose';
+
 import { EventType } from '../types/events';
 
 export type DeliveryStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'RETRYING';

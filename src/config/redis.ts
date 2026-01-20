@@ -6,8 +6,10 @@
  */
 
 import Redis from 'ioredis';
-import { config } from './index';
+
 import { logger } from '../observability';
+
+import { config } from './index';
 
 let redisClient: Redis | null = null;
 

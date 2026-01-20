@@ -5,11 +5,12 @@
  */
 
 import crypto from 'crypto';
-import { WebhookSubscription, IWebhookSubscription } from '../../models/WebhookSubscription';
-import { WebhookDelivery, IWebhookDelivery } from '../../models/WebhookDelivery';
-import { EventType } from '../../types/events';
+
 import { ApiError } from '../../middlewares/errorHandler';
+import { WebhookDelivery, IWebhookDelivery } from '../../models/WebhookDelivery';
+import { WebhookSubscription, IWebhookSubscription } from '../../models/WebhookSubscription';
 import { enqueueWebhookDelivery, WebhookJobData } from '../../queues';
+import { EventType } from '../../types/events';
 
 export interface CreateWebhookDTO {
   url: string;
@@ -151,8 +152,8 @@ export class WebhookService {
     }
 
     // Update fields
-    if (dto.url !== undefined) webhook.url = dto.url;
-    if (dto.events !== undefined) webhook.events = dto.events;
+    if (dto.url !== undefined) {webhook.url = dto.url;}
+    if (dto.events !== undefined) {webhook.events = dto.events;}
     if (dto.isActive !== undefined) {
       webhook.isActive = dto.isActive;
       // Reset failure count when re-enabling
@@ -195,10 +196,7 @@ export class WebhookService {
     }
 
     const [deliveries, total] = await Promise.all([
-      WebhookDelivery.find(query)
-        .sort({ createdAt: -1 })
-        .skip(offset)
-        .limit(Math.min(limit, 100)),
+      WebhookDelivery.find(query).sort({ createdAt: -1 }).skip(offset).limit(Math.min(limit, 100)),
       WebhookDelivery.countDocuments(query),
     ]);
 

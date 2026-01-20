@@ -1,6 +1,10 @@
 import { validationResult } from 'express-validator';
 import { Request, Response } from 'express';
-import { registerValidation, loginValidation, refreshTokenValidation } from '../../../src/auth/auth.validation';
+import {
+  registerValidation,
+  loginValidation,
+  refreshTokenValidation,
+} from '../../../src/auth/auth.validation';
 
 // Helper to run validation and get errors
 const runValidation = async (validations: any[], body: Record<string, any>) => {
@@ -255,7 +259,9 @@ describe('Auth Validation', () => {
         });
         const errors = result.array().filter((e: any) => e.path === 'password');
         expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some((e: any) => e.msg === 'Password must be at least 8 characters')).toBe(true);
+        expect(errors.some((e: any) => e.msg === 'Password must be at least 8 characters')).toBe(
+          true
+        );
       });
 
       it('should pass with password exactly 8 characters', async () => {

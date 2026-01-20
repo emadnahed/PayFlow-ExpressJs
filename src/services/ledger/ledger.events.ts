@@ -8,6 +8,7 @@
 
 import { eventBus } from '../../events/eventBus';
 import { EventType, BaseEvent, DebitSuccessEvent } from '../../types/events';
+
 import { ledgerService } from './ledger.service';
 
 /**
@@ -34,14 +35,15 @@ async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
         `[Ledger Events] Credit completed for transaction ${txnId}, new balance: ${result.newBalance}`
       );
     } else {
-      console.log(
-        `[Ledger Events] Credit failed for transaction ${txnId}: ${result.error}`
-      );
+      console.log(`[Ledger Events] Credit failed for transaction ${txnId}: ${result.error}`);
       // Note: ledgerService.processCredit handles publishing CREDIT_FAILED event
     }
   } catch (error) {
     // Unexpected error - log and let the event bus handle it
-    console.error(`[Ledger Events] CRITICAL: Unexpected error handling DEBIT_SUCCESS for ${txnId}:`, error);
+    console.error(
+      `[Ledger Events] CRITICAL: Unexpected error handling DEBIT_SUCCESS for ${txnId}:`,
+      error
+    );
     throw error;
   }
 }
@@ -54,9 +56,8 @@ async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
  */
 export async function registerLedgerEventHandlers(): Promise<void> {
   try {
-    await eventBus.subscribe(
-      EventType.DEBIT_SUCCESS,
-      (event: BaseEvent) => handleDebitSuccess(event as DebitSuccessEvent)
+    await eventBus.subscribe(EventType.DEBIT_SUCCESS, (event: BaseEvent) =>
+      handleDebitSuccess(event as DebitSuccessEvent)
     );
 
     console.log('[Ledger Events] Event handlers registered');

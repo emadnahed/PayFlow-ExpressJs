@@ -6,6 +6,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+
 import { config } from '../config';
 import { logger, getCorrelationId } from '../observability';
 import { ErrorCode, ErrorResponse, errorCodeToStatus } from '../types/errors';
@@ -36,8 +37,7 @@ export const errorHandler = (
 
   // Determine error code and status
   const errorCode = err.errorCode || ErrorCode.INTERNAL_ERROR;
-  const statusCode =
-    err.statusCode || errorCodeToStatus[errorCode] || 500;
+  const statusCode = err.statusCode || errorCodeToStatus[errorCode] || 500;
 
   // Log error with context
   logger.error(
@@ -82,11 +82,7 @@ export const errorHandler = (
 /**
  * Not found handler for unmatched routes
  */
-export const notFoundHandler = (
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): void => {
+export const notFoundHandler = (req: Request, res: Response, _next: NextFunction): void => {
   const correlationId = getCorrelationId() || 'unknown';
 
   const response: ErrorResponse = {
@@ -172,10 +168,7 @@ export class ApiError extends Error implements AppError {
     return new ApiError(ErrorCode.TOKEN_EXPIRED, message);
   }
 
-  static validationError(
-    message: string,
-    validationErrors?: Record<string, string[]>
-  ): ApiError {
+  static validationError(message: string, validationErrors?: Record<string, string[]>): ApiError {
     return new ApiError(ErrorCode.VALIDATION_ERROR, message, {
       validationErrors,
     });

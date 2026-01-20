@@ -7,24 +7,25 @@ import { NotificationType } from '../../queues/notification.queue';
 /**
  * Notification templates
  */
-export const NOTIFICATION_TEMPLATES: Record<NotificationType, { title: string; message: string }> = {
-  [NotificationType.TRANSACTION_INITIATED]: {
-    title: 'Transfer Initiated',
-    message: 'Your transfer of {currency} {amount} has been initiated',
-  },
-  [NotificationType.TRANSACTION_COMPLETED]: {
-    title: 'Transfer Successful',
-    message: 'Transfer of {currency} {amount} to {receiverName} was successful',
-  },
-  [NotificationType.TRANSACTION_FAILED]: {
-    title: 'Transfer Failed',
-    message: 'Transfer failed. {currency} {amount} has been refunded to your wallet',
-  },
-  [NotificationType.CREDIT_RECEIVED]: {
-    title: 'Payment Received',
-    message: 'You received {currency} {amount} from {senderName}',
-  },
-};
+export const NOTIFICATION_TEMPLATES: Record<NotificationType, { title: string; message: string }> =
+  {
+    [NotificationType.TRANSACTION_INITIATED]: {
+      title: 'Transfer Initiated',
+      message: 'Your transfer of {currency} {amount} has been initiated',
+    },
+    [NotificationType.TRANSACTION_COMPLETED]: {
+      title: 'Transfer Successful',
+      message: 'Transfer of {currency} {amount} to {receiverName} was successful',
+    },
+    [NotificationType.TRANSACTION_FAILED]: {
+      title: 'Transfer Failed',
+      message: 'Transfer failed. {currency} {amount} has been refunded to your wallet',
+    },
+    [NotificationType.CREDIT_RECEIVED]: {
+      title: 'Payment Received',
+      message: 'You received {currency} {amount} from {senderName}',
+    },
+  };
 
 /**
  * Template data for notification messages

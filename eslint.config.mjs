@@ -14,8 +14,9 @@ export default tseslint.config(
       '*.mjs',
     ],
   },
+  // Source files - with project for type-aware linting
   {
-    files: ['src/**/*.ts', 'tests/**/*.ts'],
+    files: ['src/**/*.ts'],
     plugins: {
       import: importPlugin,
     },
@@ -62,11 +63,33 @@ export default tseslint.config(
       'curly': ['error', 'all'],
     },
   },
+  // Test files - without project (no type-aware rules needed)
   {
     files: ['tests/**/*.ts'],
+    plugins: {
+      import: importPlugin,
+    },
     rules: {
+      // TypeScript specific rules - relaxed for tests
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      'no-unused-vars': 'off',
+
+      // Import rules - relaxed for tests
+      'import/order': 'off',
+      'import/no-duplicates': 'error',
+
+      // General rules - relaxed for tests
       'no-console': 'off',
+      'no-debugger': 'warn',
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'eqeqeq': ['error', 'always'],
+      'curly': 'off',
+      'no-loss-of-precision': 'off',
     },
   },
 );

@@ -3,7 +3,12 @@
  */
 
 // Service
-export { webhookService, WebhookService, CreateWebhookDTO, UpdateWebhookDTO } from './webhook.service';
+export {
+  webhookService,
+  WebhookService,
+  CreateWebhookDTO,
+  UpdateWebhookDTO,
+} from './webhook.service';
 
 // Controller
 export { webhookController } from './webhook.controller';
