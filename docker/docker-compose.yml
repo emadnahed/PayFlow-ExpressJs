@@ -1,6 +1,42 @@
-version: '3.8'
+name: payflow
 
 services:
+  # ================================
+  # PayFlow API Application
+  # ================================
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: payflow-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/payflow
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=dev-secret-change-in-production
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - payflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health/live', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ================================
+  # MongoDB Database
+  # ================================
   mongodb:
     image: mongo:7
     container_name: payflow-mongodb
@@ -13,11 +49,15 @@ services:
     networks:
       - payflow-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/payflow --quiet
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 20s
 
+  # ================================
+  # Redis Cache & Event Bus
+  # ================================
   redis:
     image: redis:7-alpine
     container_name: payflow-redis
@@ -25,6 +65,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
     networks:
       - payflow-network
     healthcheck:

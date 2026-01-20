@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+
 import { TransactionStatus } from '../types/events';
 
 export interface ITransaction extends Document {

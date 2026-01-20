@@ -15,6 +15,7 @@ export enum EventType {
   // Refund operations
   REFUND_REQUESTED = 'REFUND_REQUESTED',
   REFUND_COMPLETED = 'REFUND_COMPLETED',
+  REFUND_FAILED = 'REFUND_FAILED',
 }
 
 export enum TransactionStatus {
@@ -22,6 +23,7 @@ export enum TransactionStatus {
   DEBITED = 'DEBITED',
   CREDITED = 'CREDITED',
   COMPLETED = 'COMPLETED',
+  REFUNDING = 'REFUNDING',
   REFUNDED = 'REFUNDED',
   FAILED = 'FAILED',
 }
@@ -97,6 +99,15 @@ export interface RefundCompletedEvent extends BaseEvent {
   };
 }
 
+export interface RefundFailedEvent extends BaseEvent {
+  eventType: EventType.REFUND_FAILED;
+  payload: {
+    senderId: string;
+    amount: number;
+    reason: string;
+  };
+}
+
 export interface TransactionCompletedEvent extends BaseEvent {
   eventType: EventType.TRANSACTION_COMPLETED;
   payload: {
@@ -123,6 +134,7 @@ export type PayFlowEvent =
   | CreditFailedEvent
   | RefundRequestedEvent
   | RefundCompletedEvent
+  | RefundFailedEvent
   | TransactionCompletedEvent
   | TransactionFailedEvent;
 

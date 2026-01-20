@@ -19,5 +19,13 @@ module.exports = {
   clearMocks: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid|bullmq|@scalar)/)'
+  ],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { useESM: false }],
+    '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.mjs$': 'babel-jest'
   }
 };
