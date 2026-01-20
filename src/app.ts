@@ -109,7 +109,7 @@ export const createApp = (): Application => {
     try {
       res.set('Content-Type', getMetricsContentType());
       res.send(await getMetrics());
-    } catch (_error) {
+    } catch {
       res.status(500).send('Error collecting metrics');
     }
   });

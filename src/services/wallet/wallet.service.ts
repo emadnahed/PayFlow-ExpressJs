@@ -1,7 +1,7 @@
 import { eventBus } from '../../events/eventBus';
 import { ApiError } from '../../middlewares/errorHandler';
 import { Wallet, IWallet } from '../../models/Wallet';
-import { WalletOperation, IWalletOperation, OperationType } from '../../models/WalletOperation';
+import { WalletOperation, IWalletOperation } from '../../models/WalletOperation';
 import { EventType } from '../../types/events';
 
 export interface OperationResult {
