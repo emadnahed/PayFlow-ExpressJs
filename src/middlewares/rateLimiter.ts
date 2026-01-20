@@ -92,7 +92,7 @@ export const authLimiter: RateLimitRequestHandler = rateLimit({
     const email = req.body?.email || '';
     return `${req.ip}:${email}`;
   },
-  validate: { xForwardedForHeader: false },
+  validate: false,
 });
 
 /**
@@ -117,7 +117,7 @@ export const transactionLimiter: RateLimitRequestHandler = rateLimit({
     // Use user ID if authenticated, otherwise IP
     return req.user?.userId || req.ip || 'unknown';
   },
-  validate: { xForwardedForHeader: false },
+  validate: false,
 });
 
 /**
@@ -141,7 +141,7 @@ export const apiLimiter: RateLimitRequestHandler = rateLimit({
   keyGenerator: (req: AuthenticatedRequest) => {
     return req.user?.userId || req.ip || 'unknown';
   },
-  validate: { xForwardedForHeader: false },
+  validate: false,
 });
 
 /**
@@ -165,5 +165,5 @@ export const webhookLimiter: RateLimitRequestHandler = rateLimit({
   keyGenerator: (req: AuthenticatedRequest) => {
     return `webhook:${req.user?.userId || req.ip || 'unknown'}`;
   },
-  validate: { xForwardedForHeader: false },
+  validate: false,
 });
