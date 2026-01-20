@@ -5,8 +5,10 @@
  */
 
 import { Queue, Job } from 'bullmq';
-import { queueConnection, webhookJobOptions, QUEUE_NAMES } from './queue.config';
+
 import { EventType } from '../types/events';
+
+import { queueConnection, webhookJobOptions, QUEUE_NAMES } from './queue.config';
 
 /**
  * Webhook job data structure
@@ -57,7 +59,9 @@ export function getWebhookQueue(): Queue<WebhookJobData, WebhookJobResult> {
 /**
  * Add a webhook delivery job to the queue
  */
-export async function enqueueWebhookDelivery(data: WebhookJobData): Promise<Job<WebhookJobData, WebhookJobResult>> {
+export async function enqueueWebhookDelivery(
+  data: WebhookJobData
+): Promise<Job<WebhookJobData, WebhookJobResult>> {
   const queue = getWebhookQueue();
   const job = await queue.add(`webhook:${data.eventType}`, data, {
     jobId: data.deliveryId, // Use delivery ID for idempotency

@@ -5,6 +5,7 @@
  */
 
 import { eventBus } from '../../events/eventBus';
+import { User } from '../../models/User';
 import {
   EventType,
   BaseEvent,
@@ -13,8 +14,8 @@ import {
   TransactionFailedEvent,
   CreditSuccessEvent,
 } from '../../types/events';
+
 import { notificationService } from './notification.service';
-import { User } from '../../models/User';
 
 /**
  * Get user name by userId (for notification messages)
@@ -36,7 +37,10 @@ async function handleTransactionInitiated(event: TransactionInitiatedEvent): Pro
   try {
     await notificationService.notifyTransactionInitiated(senderId, amount, currency, transactionId);
   } catch (error) {
-    console.error('[Notification Events] Error queueing TRANSACTION_INITIATED notification:', error);
+    console.error(
+      '[Notification Events] Error queueing TRANSACTION_INITIATED notification:',
+      error
+    );
   }
 }
 
@@ -59,7 +63,10 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
       transactionId
     );
   } catch (error) {
-    console.error('[Notification Events] Error queueing TRANSACTION_COMPLETED notification:', error);
+    console.error(
+      '[Notification Events] Error queueing TRANSACTION_COMPLETED notification:',
+      error
+    );
   }
 }
 
@@ -123,24 +130,20 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
  */
 export async function registerNotificationEventHandlers(): Promise<void> {
   try {
-    await eventBus.subscribe(
-      EventType.TRANSACTION_INITIATED,
-      (event: BaseEvent) => handleTransactionInitiated(event as TransactionInitiatedEvent)
+    await eventBus.subscribe(EventType.TRANSACTION_INITIATED, (event: BaseEvent) =>
+      handleTransactionInitiated(event as TransactionInitiatedEvent)
     );
 
-    await eventBus.subscribe(
-      EventType.TRANSACTION_COMPLETED,
-      (event: BaseEvent) => handleTransactionCompleted(event as TransactionCompletedEvent)
+    await eventBus.subscribe(EventType.TRANSACTION_COMPLETED, (event: BaseEvent) =>
+      handleTransactionCompleted(event as TransactionCompletedEvent)
     );
 
-    await eventBus.subscribe(
-      EventType.TRANSACTION_FAILED,
-      (event: BaseEvent) => handleTransactionFailed(event as TransactionFailedEvent)
+    await eventBus.subscribe(EventType.TRANSACTION_FAILED, (event: BaseEvent) =>
+      handleTransactionFailed(event as TransactionFailedEvent)
     );
 
-    await eventBus.subscribe(
-      EventType.CREDIT_SUCCESS,
-      (event: BaseEvent) => handleCreditSuccess(event as CreditSuccessEvent)
+    await eventBus.subscribe(EventType.CREDIT_SUCCESS, (event: BaseEvent) =>
+      handleCreditSuccess(event as CreditSuccessEvent)
     );
 
     console.log('[Notification Events] Event handlers registered');

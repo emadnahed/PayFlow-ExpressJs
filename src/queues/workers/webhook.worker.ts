@@ -4,14 +4,16 @@
  * Processes webhook delivery jobs with retries, HMAC signing, and delivery logging.
  */
 
-import { Worker, Job } from 'bullmq';
-import axios from 'axios';
 import crypto from 'crypto';
+
+import axios from 'axios';
+import { Worker, Job } from 'bullmq';
+
+import { config } from '../../config';
+import { WebhookDelivery } from '../../models/WebhookDelivery';
+import { WebhookSubscription } from '../../models/WebhookSubscription';
 import { queueConnection, QUEUE_NAMES, WORKER_CONCURRENCY } from '../queue.config';
 import { WebhookJobData, WebhookJobResult } from '../webhook.queue';
-import { WebhookSubscription } from '../../models/WebhookSubscription';
-import { WebhookDelivery } from '../../models/WebhookDelivery';
-import { config } from '../../config';
 
 let webhookWorker: Worker<WebhookJobData, WebhookJobResult> | null = null;
 
@@ -26,10 +28,14 @@ function signPayload(payload: object, secret: string): string {
 /**
  * Process a webhook delivery job
  */
-async function processWebhookJob(job: Job<WebhookJobData, WebhookJobResult>): Promise<WebhookJobResult> {
+async function processWebhookJob(
+  job: Job<WebhookJobData, WebhookJobResult>
+): Promise<WebhookJobResult> {
   const { webhookId, deliveryId, payload } = job.data;
 
-  console.log(`[Webhook Worker] Processing job ${job.id} for webhook ${webhookId}, attempt ${job.attemptsMade + 1}`);
+  console.log(
+    `[Webhook Worker] Processing job ${job.id} for webhook ${webhookId}, attempt ${job.attemptsMade + 1}`
+  );
 
   // Get webhook subscription
   const subscription = await WebhookSubscription.findOne({ webhookId, isActive: true });
@@ -57,7 +63,9 @@ async function processWebhookJob(job: Job<WebhookJobData, WebhookJobResult>): Pr
       validateStatus: (status) => status >= 200 && status < 300,
     });
 
-    console.log(`[Webhook Worker] Delivery successful for ${deliveryId}: status ${response.status}`);
+    console.log(
+      `[Webhook Worker] Delivery successful for ${deliveryId}: status ${response.status}`
+    );
 
     // Update delivery record
     await updateDeliveryStatus(deliveryId, 'SUCCESS', {
@@ -97,10 +105,7 @@ async function processWebhookJob(job: Job<WebhookJobData, WebhookJobResult>): Pr
     });
 
     // Increment failure count
-    await WebhookSubscription.updateOne(
-      { webhookId },
-      { $inc: { failureCount: 1 } }
-    );
+    await WebhookSubscription.updateOne({ webhookId }, { $inc: { failureCount: 1 } });
 
     throw error; // Re-throw to trigger BullMQ retry
   }
@@ -145,14 +150,18 @@ function setupWorkerEvents(worker: Worker<WebhookJobData, WebhookJobResult>): vo
   });
 
   worker.on('failed', async (job, err) => {
-    if (!job) return;
+    if (!job) {return;}
 
     const maxAttempts = job.opts.attempts || config.webhook.retryAttempts;
     const isLastAttempt = job.attemptsMade >= maxAttempts;
-    console.error(`[Webhook Worker] Job ${job.id} failed (attempt ${job.attemptsMade}/${maxAttempts}): ${err.message}`);
+    console.error(
+      `[Webhook Worker] Job ${job.id} failed (attempt ${job.attemptsMade}/${maxAttempts}): ${err.message}`
+    );
 
     if (isLastAttempt) {
-      console.log(`[Webhook Worker] Job ${job.id} moved to dead letter queue after ${job.attemptsMade} attempts`);
+      console.log(
+        `[Webhook Worker] Job ${job.id} moved to dead letter queue after ${job.attemptsMade} attempts`
+      );
 
       // Check if we should disable the webhook after too many failures (configurable)
       const subscription = await WebhookSubscription.findOne({ webhookId: job.data.webhookId });
@@ -161,7 +170,9 @@ function setupWorkerEvents(worker: Worker<WebhookJobData, WebhookJobResult>): vo
           { webhookId: job.data.webhookId },
           { $set: { isActive: false } }
         );
-        console.log(`[Webhook Worker] Webhook ${job.data.webhookId} disabled after ${subscription.failureCount} failures`);
+        console.log(
+          `[Webhook Worker] Webhook ${job.data.webhookId} disabled after ${subscription.failureCount} failures`
+        );
       }
     }
   });

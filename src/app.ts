@@ -5,27 +5,28 @@
  * and security configurations.
  */
 
-import express, { Application } from 'express';
-import cors, { CorsOptions } from 'cors';
-import helmet from 'helmet';
 import { apiReference } from '@scalar/express-api-reference';
-import { config } from './config';
-import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
-import { globalLimiter, authLimiter, transactionLimiter } from './middlewares/rateLimiter';
-import { idempotencyForMutations, validateIdempotencyKey } from './middlewares/idempotency';
-import healthRoutes from './routes/health';
+import cors, { CorsOptions } from 'cors';
+import express, { Application } from 'express';
+import helmet from 'helmet';
+
 import { authRoutes } from './auth';
-import { walletRoutes } from './services/wallet';
-import { transactionRoutes } from './services/transaction';
-import { ledgerRoutes } from './services/ledger';
-import { webhookRoutes } from './services/webhook';
+import { config } from './config';
+import { generateOpenAPI } from './docs/openapi';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
+import { idempotencyForMutations, validateIdempotencyKey } from './middlewares/idempotency';
+import { globalLimiter, authLimiter, transactionLimiter } from './middlewares/rateLimiter';
 import {
   correlationMiddleware,
   metricsMiddleware,
   getMetrics,
   getMetricsContentType,
 } from './observability';
-import { generateOpenAPI } from './docs/openapi';
+import healthRoutes from './routes/health';
+import { ledgerRoutes } from './services/ledger';
+import { transactionRoutes } from './services/transaction';
+import { walletRoutes } from './services/wallet';
+import { webhookRoutes } from './services/webhook';
 
 /**
  * CORS configuration
@@ -33,9 +34,7 @@ import { generateOpenAPI } from './docs/openapi';
  * - Development: Allow all origins
  */
 const corsOptions: CorsOptions = {
-  origin: config.isProduction
-    ? (process.env.CORS_ORIGINS || '').split(',').filter(Boolean)
-    : '*',
+  origin: config.isProduction ? (process.env.CORS_ORIGINS || '').split(',').filter(Boolean) : '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
@@ -110,7 +109,7 @@ export const createApp = (): Application => {
     try {
       res.set('Content-Type', getMetricsContentType());
       res.send(await getMetrics());
-    } catch (error) {
+    } catch (_error) {
       res.status(500).send('Error collecting metrics');
     }
   });

@@ -5,11 +5,14 @@
  */
 
 import { Response, NextFunction } from 'express';
+
 import { AuthRequest } from '../../auth';
 import { ApiError } from '../../middlewares/errorHandler';
-import { webhookService, CreateWebhookDTO, UpdateWebhookDTO } from './webhook.service';
-import { IWebhookSubscription } from '../../models/WebhookSubscription';
 import { DeliveryStatus } from '../../models/WebhookDelivery';
+import { IWebhookSubscription } from '../../models/WebhookSubscription';
+
+import { webhookService, CreateWebhookDTO, UpdateWebhookDTO } from './webhook.service';
+
 
 /**
  * Convert webhook document to safe DTO (hide secret)
@@ -95,7 +98,8 @@ class WebhookController {
       }
 
       const options = {
-        isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
+        isActive:
+          req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
         offset: req.query.offset ? parseInt(req.query.offset as string, 10) : undefined,
       };

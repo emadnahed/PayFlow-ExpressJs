@@ -6,14 +6,15 @@
  */
 
 import { eventBus } from '../../events/eventBus';
+import { Transaction } from '../../models/Transaction';
 import {
   EventType,
   BaseEvent,
   TransactionCompletedEvent,
   TransactionFailedEvent,
 } from '../../types/events';
+
 import { webhookService } from './webhook.service';
-import { Transaction } from '../../models/Transaction';
 
 /**
  * Handle TRANSACTION_COMPLETED event
@@ -94,14 +95,12 @@ async function handleTransactionFailed(event: TransactionFailedEvent): Promise<v
  */
 export async function registerWebhookEventHandlers(): Promise<void> {
   try {
-    await eventBus.subscribe(
-      EventType.TRANSACTION_COMPLETED,
-      (event: BaseEvent) => handleTransactionCompleted(event as TransactionCompletedEvent)
+    await eventBus.subscribe(EventType.TRANSACTION_COMPLETED, (event: BaseEvent) =>
+      handleTransactionCompleted(event as TransactionCompletedEvent)
     );
 
-    await eventBus.subscribe(
-      EventType.TRANSACTION_FAILED,
-      (event: BaseEvent) => handleTransactionFailed(event as TransactionFailedEvent)
+    await eventBus.subscribe(EventType.TRANSACTION_FAILED, (event: BaseEvent) =>
+      handleTransactionFailed(event as TransactionFailedEvent)
     );
 
     console.log('[Webhook Events] Event handlers registered');

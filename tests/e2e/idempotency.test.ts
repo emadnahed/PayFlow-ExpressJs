@@ -14,9 +14,7 @@ describe('Idempotency E2E Tests', () => {
   describe('Idempotency Key Validation', () => {
     describe('Valid Keys', () => {
       it('should accept alphanumeric keys', async () => {
-        const response = await request(app)
-          .get('/health/live')
-          .set('X-Idempotency-Key', 'abc123');
+        const response = await request(app).get('/health/live').set('X-Idempotency-Key', 'abc123');
 
         expect(response.status).toBe(200);
       });
@@ -48,17 +46,13 @@ describe('Idempotency E2E Tests', () => {
       it('should accept keys at exactly 64 characters', async () => {
         const key = 'a'.repeat(64);
 
-        const response = await request(app)
-          .get('/health/live')
-          .set('X-Idempotency-Key', key);
+        const response = await request(app).get('/health/live').set('X-Idempotency-Key', key);
 
         expect(response.status).toBe(200);
       });
 
       it('should accept single character keys', async () => {
-        const response = await request(app)
-          .get('/health/live')
-          .set('X-Idempotency-Key', 'a');
+        const response = await request(app).get('/health/live').set('X-Idempotency-Key', 'a');
 
         expect(response.status).toBe(200);
       });
@@ -87,18 +81,14 @@ describe('Idempotency E2E Tests', () => {
       it('should reject keys longer than 64 characters', async () => {
         const key = 'a'.repeat(65);
 
-        const response = await request(app)
-          .get('/health/live')
-          .set('X-Idempotency-Key', key);
+        const response = await request(app).get('/health/live').set('X-Idempotency-Key', key);
 
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
       });
 
       it('should reject empty keys', async () => {
-        const response = await request(app)
-          .get('/health/live')
-          .set('X-Idempotency-Key', '');
+        const response = await request(app).get('/health/live').set('X-Idempotency-Key', '');
 
         // Empty header might be treated as no header by some HTTP clients
         // But if sent, it should be rejected
@@ -181,9 +171,7 @@ describe('Idempotency E2E Tests', () => {
     });
 
     it('should include error code 2003 for invalid input', async () => {
-      const response = await request(app)
-        .get('/health/live')
-        .set('X-Idempotency-Key', 'bad key');
+      const response = await request(app).get('/health/live').set('X-Idempotency-Key', 'bad key');
 
       expect(response.body.error.code).toBe(2003); // INVALID_INPUT
     });

@@ -6,8 +6,10 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+
 import { config } from '../../config';
 import { ApiError } from '../../middlewares/errorHandler';
+
 import { ledgerSimulation, FailureType } from './ledger.simulation';
 
 interface SimulationConfigRequest {
@@ -63,9 +65,7 @@ class LedgerController {
         // Enable with provided values; omitted fields preserve existing values
         ledgerSimulation.enable({
           failureRate,
-          failTransactionIds: failTransactionIds
-            ? new Set(failTransactionIds)
-            : undefined,
+          failTransactionIds: failTransactionIds ? new Set(failTransactionIds) : undefined,
           failureType,
         });
       } else {

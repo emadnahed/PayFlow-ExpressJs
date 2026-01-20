@@ -5,13 +5,7 @@
  */
 
 // Error handling
-export {
-  errorHandler,
-  notFoundHandler,
-  ApiError,
-  asyncHandler,
-  AppError,
-} from './errorHandler';
+export { errorHandler, notFoundHandler, ApiError, asyncHandler, AppError } from './errorHandler';
 
 // Request validation
 export { validateRequest } from './validateRequest';

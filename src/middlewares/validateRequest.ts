@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+
 import { ApiError } from './errorHandler';
 
 /**
@@ -11,13 +12,17 @@ export const validateRequest = (req: Request, _res: Response, next: NextFunction
 
   if (!errors.isEmpty()) {
     const error = new ApiError(400, 'Validation failed');
-    (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors =
-      errors.array().reduce((acc, err) => {
-        const field = (err as { path: string }).path;
-        if (!acc[field]) acc[field] = [];
-        acc[field].push(err.msg);
-        return acc;
-      }, {} as Record<string, string[]>);
+    (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = errors
+      .array()
+      .reduce(
+        (acc, err) => {
+          const field = (err as { path: string }).path;
+          if (!acc[field]) {acc[field] = [];}
+          acc[field].push(err.msg);
+          return acc;
+        },
+        {} as Record<string, string[]>
+      );
     throw error;
   }
 

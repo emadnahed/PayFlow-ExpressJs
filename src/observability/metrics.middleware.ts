@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import { httpRequestsTotal, httpRequestDuration } from './metrics';
 
 /**
@@ -40,11 +41,7 @@ const getRoutePath = (req: Request): string => {
  * HTTP metrics middleware
  * Records request count and duration for Prometheus
  */
-export const metricsMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const metricsMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   // Skip metrics for the metrics endpoint itself
   if (req.path === '/metrics') {
     next();

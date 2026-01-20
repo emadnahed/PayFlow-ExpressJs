@@ -3,6 +3,7 @@
  */
 
 import { body, param, query } from 'express-validator';
+
 import { EventType } from '../../types/events';
 
 const validEventTypes = Object.values(EventType);
@@ -20,9 +21,7 @@ export const createWebhookValidation = [
     .isURL({ require_protocol: true, protocols: ['https'] })
     .withMessage('Invalid URL format. Only HTTPS URLs are allowed.'),
 
-  body('events')
-    .isArray({ min: 1 })
-    .withMessage('At least one event type is required'),
+  body('events').isArray({ min: 1 }).withMessage('At least one event type is required'),
 
   body('events.*')
     .isIn(validEventTypes)
@@ -39,29 +38,18 @@ export const createWebhookValidation = [
  * Validation rules for updating a webhook
  */
 export const updateWebhookValidation = [
-  param('id')
-    .notEmpty()
-    .withMessage('Webhook ID is required'),
+  param('id').notEmpty().withMessage('Webhook ID is required'),
 
-  body('url')
-    .optional()
-    .isURL({ require_protocol: true })
-    .withMessage('Invalid URL format'),
+  body('url').optional().isURL({ require_protocol: true }).withMessage('Invalid URL format'),
 
-  body('events')
-    .optional()
-    .isArray({ min: 1 })
-    .withMessage('At least one event type is required'),
+  body('events').optional().isArray({ min: 1 }).withMessage('At least one event type is required'),
 
   body('events.*')
     .optional()
     .isIn(validEventTypes)
     .withMessage(`Invalid event type. Valid types: ${validEventTypes.join(', ')}`),
 
-  body('isActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean'),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
 ];
 
 /**
@@ -79,29 +67,21 @@ export const webhookIdValidation = [
  * Validation rules for listing webhooks
  */
 export const listWebhooksValidation = [
-  query('isActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean'),
+  query('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
 
   query('limit')
     .optional()
     .isInt({ min: 1, max: MAX_PAGE_LIMIT })
     .withMessage(`Limit must be between 1 and ${MAX_PAGE_LIMIT}`),
 
-  query('offset')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('Offset must be a non-negative integer'),
+  query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be a non-negative integer'),
 ];
 
 /**
  * Validation rules for delivery logs
  */
 export const deliveryLogsValidation = [
-  param('id')
-    .notEmpty()
-    .withMessage('Webhook ID is required'),
+  param('id').notEmpty().withMessage('Webhook ID is required'),
 
   query('status')
     .optional()
@@ -113,8 +93,5 @@ export const deliveryLogsValidation = [
     .isInt({ min: 1, max: MAX_PAGE_LIMIT })
     .withMessage(`Limit must be between 1 and ${MAX_PAGE_LIMIT}`),
 
-  query('offset')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('Offset must be a non-negative integer'),
+  query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be a non-negative integer'),
 ];

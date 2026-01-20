@@ -74,7 +74,7 @@ class LedgerSimulation {
    * Add specific transaction IDs to fail
    */
   addFailingTransactionIds(transactionIds: string[]): void {
-    if (!this.isSimulationAllowed()) return;
+    if (!this.isSimulationAllowed()) {return;}
 
     transactionIds.forEach((id) => this.config.failTransactionIds.add(id));
     console.log('[Ledger Simulation] Added failing transaction IDs:', transactionIds);
@@ -122,7 +122,9 @@ class LedgerSimulation {
 
     // Check failure rate (random failure)
     if (this.config.failureRate > 0 && Math.random() < this.config.failureRate) {
-      console.log(`[Ledger Simulation] Transaction ${transactionId} failed by rate (${this.config.failureRate})`);
+      console.log(
+        `[Ledger Simulation] Transaction ${transactionId} failed by rate (${this.config.failureRate})`
+      );
       return true;
     }
 

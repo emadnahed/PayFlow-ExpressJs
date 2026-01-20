@@ -290,11 +290,9 @@ describe('AuthService Integration Tests', () => {
     });
 
     it('should throw error for expired refresh token', async () => {
-      const expiredToken = jwt.sign(
-        { userId, email: 'test@example.com' },
-        config.jwt.secret,
-        { expiresIn: '-1s' }
-      );
+      const expiredToken = jwt.sign({ userId, email: 'test@example.com' }, config.jwt.secret, {
+        expiresIn: '-1s',
+      });
 
       await expect(authService.refreshTokens(expiredToken)).rejects.toThrow('Token expired');
     });
@@ -308,7 +306,9 @@ describe('AuthService Integration Tests', () => {
     it('should throw error if user is deactivated', async () => {
       await User.updateOne({ userId }, { isActive: false });
 
-      await expect(authService.refreshTokens(refreshToken)).rejects.toThrow('Account is deactivated');
+      await expect(authService.refreshTokens(refreshToken)).rejects.toThrow(
+        'Account is deactivated'
+      );
     });
   });
 

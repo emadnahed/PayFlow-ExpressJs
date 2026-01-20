@@ -151,9 +151,7 @@ describe('Security E2E Tests', () => {
     it('should reject X-Idempotency-Key longer than 64 characters', async () => {
       const longKey = 'a'.repeat(65);
 
-      const response = await request(app)
-        .get('/health/live')
-        .set('X-Idempotency-Key', longKey);
+      const response = await request(app).get('/health/live').set('X-Idempotency-Key', longKey);
 
       expect(response.status).toBe(400);
     });
@@ -195,7 +193,10 @@ describe('Security E2E Tests', () => {
 
       expect(response.body.components.securitySchemes).toHaveProperty('bearerAuth');
       expect(response.body.components.securitySchemes.bearerAuth).toHaveProperty('type', 'http');
-      expect(response.body.components.securitySchemes.bearerAuth).toHaveProperty('scheme', 'bearer');
+      expect(response.body.components.securitySchemes.bearerAuth).toHaveProperty(
+        'scheme',
+        'bearer'
+      );
     });
   });
 

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+
 import { getDatabaseStatus } from '../config/database';
 import { eventBus } from '../events/eventBus';
 

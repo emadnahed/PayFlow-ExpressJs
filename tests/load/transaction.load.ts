@@ -107,13 +107,19 @@ async function runLoadTest(scenario: TestScenario, config: LoadTestConfig): Prom
   } else {
     console.log('\n❌ Load test FAILED');
     if (result.requests.average < thresholds.minRequestsPerSec) {
-      console.log(`   - Requests/sec below threshold: ${result.requests.average} < ${thresholds.minRequestsPerSec}`);
+      console.log(
+        `   - Requests/sec below threshold: ${result.requests.average} < ${thresholds.minRequestsPerSec}`
+      );
     }
     if (result.latency.p99 > thresholds.maxLatencyP99) {
-      console.log(`   - P99 latency above threshold: ${result.latency.p99}ms > ${thresholds.maxLatencyP99}ms`);
+      console.log(
+        `   - P99 latency above threshold: ${result.latency.p99}ms > ${thresholds.maxLatencyP99}ms`
+      );
     }
     if (errorRate > thresholds.maxErrorRate) {
-      console.log(`   - Error rate above threshold: ${(errorRate * 100).toFixed(2)}% > ${thresholds.maxErrorRate * 100}%`);
+      console.log(
+        `   - Error rate above threshold: ${(errorRate * 100).toFixed(2)}% > ${thresholds.maxErrorRate * 100}%`
+      );
     }
   }
 
@@ -169,7 +175,9 @@ async function runStressTest(): Promise<void> {
 
     const result = await instance;
 
-    console.log(`  Req/sec: ${result.requests.average}, P99: ${result.latency.p99}ms, Errors: ${result.errors}`);
+    console.log(
+      `  Req/sec: ${result.requests.average}, P99: ${result.latency.p99}ms, Errors: ${result.errors}`
+    );
 
     // Stop if error rate exceeds 5%
     if (result.errors / result.requests.total > 0.05) {

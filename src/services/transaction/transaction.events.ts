@@ -8,6 +8,7 @@ import {
   CreditFailedEvent,
   RefundCompletedEvent,
 } from '../../types/events';
+
 import { transactionService } from './transaction.service';
 
 /**
@@ -58,7 +59,10 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
   try {
     await transactionService.onCreditSuccess(txnId);
   } catch (error) {
-    console.error(`[Transaction Saga] CRITICAL: Error handling CREDIT_SUCCESS for ${txnId}:`, error);
+    console.error(
+      `[Transaction Saga] CRITICAL: Error handling CREDIT_SUCCESS for ${txnId}:`,
+      error
+    );
     throw error;
   }
 }
@@ -91,7 +95,10 @@ async function handleRefundCompleted(event: RefundCompletedEvent): Promise<void>
   try {
     await transactionService.onRefundCompleted(txnId);
   } catch (error) {
-    console.error(`[Transaction Saga] CRITICAL: Error handling REFUND_COMPLETED for ${txnId}:`, error);
+    console.error(
+      `[Transaction Saga] CRITICAL: Error handling REFUND_COMPLETED for ${txnId}:`,
+      error
+    );
     throw error;
   }
 }
@@ -102,29 +109,24 @@ async function handleRefundCompleted(event: RefundCompletedEvent): Promise<void>
 export async function registerTransactionEventHandlers(): Promise<void> {
   try {
     // Subscribe to debit results
-    await eventBus.subscribe(
-      EventType.DEBIT_SUCCESS,
-      (event: BaseEvent) => handleDebitSuccess(event as DebitSuccessEvent)
+    await eventBus.subscribe(EventType.DEBIT_SUCCESS, (event: BaseEvent) =>
+      handleDebitSuccess(event as DebitSuccessEvent)
     );
-    await eventBus.subscribe(
-      EventType.DEBIT_FAILED,
-      (event: BaseEvent) => handleDebitFailed(event as DebitFailedEvent)
+    await eventBus.subscribe(EventType.DEBIT_FAILED, (event: BaseEvent) =>
+      handleDebitFailed(event as DebitFailedEvent)
     );
 
     // Subscribe to credit results
-    await eventBus.subscribe(
-      EventType.CREDIT_SUCCESS,
-      (event: BaseEvent) => handleCreditSuccess(event as CreditSuccessEvent)
+    await eventBus.subscribe(EventType.CREDIT_SUCCESS, (event: BaseEvent) =>
+      handleCreditSuccess(event as CreditSuccessEvent)
     );
-    await eventBus.subscribe(
-      EventType.CREDIT_FAILED,
-      (event: BaseEvent) => handleCreditFailed(event as CreditFailedEvent)
+    await eventBus.subscribe(EventType.CREDIT_FAILED, (event: BaseEvent) =>
+      handleCreditFailed(event as CreditFailedEvent)
     );
 
     // Subscribe to refund completion
-    await eventBus.subscribe(
-      EventType.REFUND_COMPLETED,
-      (event: BaseEvent) => handleRefundCompleted(event as RefundCompletedEvent)
+    await eventBus.subscribe(EventType.REFUND_COMPLETED, (event: BaseEvent) =>
+      handleRefundCompleted(event as RefundCompletedEvent)
     );
 
     console.log('[Transaction Saga] Event handlers registered');

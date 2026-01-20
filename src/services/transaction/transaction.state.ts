@@ -1,5 +1,5 @@
-import { TransactionStatus } from '../../types/events';
 import { ApiError } from '../../middlewares/errorHandler';
+import { TransactionStatus } from '../../types/events';
 
 /**
  * Valid state transitions for the Transaction Saga
@@ -22,7 +22,7 @@ const validTransitions: Record<TransactionStatus, TransactionStatus[]> = {
   [TransactionStatus.REFUNDING]: [TransactionStatus.FAILED],
   [TransactionStatus.REFUNDED]: [], // Terminal state (legacy)
   [TransactionStatus.COMPLETED]: [], // Terminal state
-  [TransactionStatus.FAILED]: [],    // Terminal state
+  [TransactionStatus.FAILED]: [], // Terminal state
 };
 
 /**

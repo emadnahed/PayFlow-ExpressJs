@@ -107,7 +107,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/auth/register': {
         post: {
           summary: 'Register a new user',
-          description: 'Creates a new user account with email and password. A wallet is automatically created for the user.',
+          description:
+            'Creates a new user account with email and password. A wallet is automatically created for the user.',
           tags: ['Auth'],
           requestBody: {
             required: true,
@@ -247,7 +248,7 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/wallets/me': {
         get: {
           summary: 'Get my wallet',
-          description: 'Returns the current user\'s wallet with balance.',
+          description: "Returns the current user's wallet with balance.",
           tags: ['Wallets'],
           security: [{ bearerAuth: [] }],
           responses: {
@@ -274,7 +275,7 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/wallets/me/history': {
         get: {
           summary: 'Get wallet history',
-          description: 'Returns the operation history for the current user\'s wallet.',
+          description: "Returns the operation history for the current user's wallet.",
           tags: ['Wallets'],
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -301,19 +302,17 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/wallets/me/deposit': {
         post: {
           summary: 'Deposit funds',
-          description: 'Deposits funds into the current user\'s wallet. For testing/admin purposes.',
+          description: "Deposits funds into the current user's wallet. For testing/admin purposes.",
           tags: ['Wallets'],
           security: [{ bearerAuth: [] }],
-          parameters: [
-            { $ref: '#/components/parameters/IdempotencyKey' },
-          ],
+          parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }],
           requestBody: {
             required: true,
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/DepositRequest' },
                 example: {
-                  amount: 1000.00,
+                  amount: 1000.0,
                 },
               },
             },
@@ -388,12 +387,11 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/transactions': {
         post: {
           summary: 'Create a transaction',
-          description: 'Initiates a money transfer from the sender to the receiver. Uses saga pattern for reliability.',
+          description:
+            'Initiates a money transfer from the sender to the receiver. Uses saga pattern for reliability.',
           tags: ['Transactions'],
           security: [{ bearerAuth: [] }],
-          parameters: [
-            { $ref: '#/components/parameters/IdempotencyKey' },
-          ],
+          parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }],
           requestBody: {
             required: true,
             content: {
@@ -401,7 +399,7 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
                 schema: { $ref: '#/components/schemas/CreateTransactionRequest' },
                 example: {
                   receiverId: '507f1f77bcf86cd799439011',
-                  amount: 100.50,
+                  amount: 100.5,
                   currency: 'USD',
                   description: 'Payment for services',
                 },
@@ -441,7 +439,15 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
               description: 'Filter by transaction status',
               schema: {
                 type: 'string',
-                enum: ['INITIATED', 'DEBITED', 'CREDITED', 'COMPLETED', 'REFUNDING', 'REFUNDED', 'FAILED'],
+                enum: [
+                  'INITIATED',
+                  'DEBITED',
+                  'CREDITED',
+                  'COMPLETED',
+                  'REFUNDING',
+                  'REFUNDED',
+                  'FAILED',
+                ],
               },
             },
             {
@@ -519,7 +525,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/webhooks': {
         post: {
           summary: 'Create webhook subscription',
-          description: 'Registers a new webhook to receive event notifications. Only HTTPS URLs are allowed.',
+          description:
+            'Registers a new webhook to receive event notifications. Only HTTPS URLs are allowed.',
           tags: ['Webhooks'],
           security: [{ bearerAuth: [] }],
           requestBody: {
@@ -773,7 +780,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/ledger/simulation': {
         get: {
           summary: 'Get simulation config',
-          description: 'Returns the current ledger simulation configuration. For testing purposes only.',
+          description:
+            'Returns the current ledger simulation configuration. For testing purposes only.',
           tags: ['Ledger'],
           responses: {
             '200': {
@@ -860,7 +868,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/health': {
         get: {
           summary: 'Health check',
-          description: 'Returns the overall health status of the service including database and event bus connectivity.',
+          description:
+            'Returns the overall health status of the service including database and event bus connectivity.',
           tags: ['Health'],
           responses: {
             '200': {
@@ -908,7 +917,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
       '/health/ready': {
         get: {
           summary: 'Readiness probe',
-          description: 'Kubernetes readiness probe. Returns 200 if the service is ready to accept traffic.',
+          description:
+            'Kubernetes readiness probe. Returns 200 if the service is ready to accept traffic.',
           tags: ['Health'],
           responses: {
             '200': {
@@ -974,7 +984,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
         IdempotencyKey: {
           name: 'X-Idempotency-Key',
           in: 'header',
-          description: 'Unique key to prevent duplicate requests. Alphanumeric with dashes/underscores, max 64 chars.',
+          description:
+            'Unique key to prevent duplicate requests. Alphanumeric with dashes/underscores, max 64 chars.',
           schema: { type: 'string', maxLength: 64, pattern: '^[a-zA-Z0-9_-]+$' },
         },
       },
@@ -1206,7 +1217,15 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
             currency: { type: 'string' },
             status: {
               type: 'string',
-              enum: ['INITIATED', 'DEBITED', 'CREDITED', 'COMPLETED', 'REFUNDING', 'REFUNDED', 'FAILED'],
+              enum: [
+                'INITIATED',
+                'DEBITED',
+                'CREDITED',
+                'COMPLETED',
+                'REFUNDING',
+                'REFUNDED',
+                'FAILED',
+              ],
               description: 'Current transaction status',
             },
             description: { type: 'string' },
@@ -1450,7 +1469,8 @@ Keys must be alphanumeric with dashes/underscores, max 64 characters.
               properties: {
                 code: {
                   type: 'integer',
-                  description: 'Error code (1xxx=auth, 2xxx=validation, 3xxx=business, 4xxx=rate limit, 5xxx=system)',
+                  description:
+                    'Error code (1xxx=auth, 2xxx=validation, 3xxx=business, 4xxx=rate limit, 5xxx=system)',
                 },
                 message: { type: 'string' },
                 details: {

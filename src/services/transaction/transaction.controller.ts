@@ -1,9 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { transactionService } from './transaction.service';
+
 import { AuthRequest } from '../../auth/auth.types';
 import { ApiError } from '../../middlewares/errorHandler';
-import { TransactionStatus } from '../../types/events';
 import { ITransaction } from '../../models/Transaction';
+import { TransactionStatus } from '../../types/events';
+
+import { transactionService } from './transaction.service';
 
 interface TransactionDTO {
   transactionId: string;
@@ -73,7 +75,10 @@ export class TransactionController {
       const transaction = await transactionService.getTransaction(id);
 
       // User can only view their own transactions
-      if (transaction.senderId !== req.user!.userId && transaction.receiverId !== req.user!.userId) {
+      if (
+        transaction.senderId !== req.user!.userId &&
+        transaction.receiverId !== req.user!.userId
+      ) {
         throw new ApiError(403, 'Not authorized to view this transaction');
       }
 

@@ -9,12 +9,14 @@
  * - Testing compensation logic
  */
 
-import { Transaction } from '../../models/Transaction';
-import { walletService, CreditResult } from '../wallet/wallet.service';
 import { eventBus } from '../../events/eventBus';
-import { EventType } from '../../types/events';
-import { ledgerSimulation, SimulatedFailureError } from './ledger.simulation';
 import { ApiError } from '../../middlewares/errorHandler';
+import { Transaction } from '../../models/Transaction';
+import { EventType } from '../../types/events';
+import { walletService, CreditResult } from '../wallet/wallet.service';
+
+import { ledgerSimulation, SimulatedFailureError } from './ledger.simulation';
+
 
 export interface CreditRequest {
   transactionId: string;

@@ -3,8 +3,11 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { webhookController } from './webhook.controller';
+
 import { authMiddleware } from '../../auth/auth.middleware';
+import { validateRequest } from '../../middlewares/validateRequest';
+
+import { webhookController } from './webhook.controller';
 import {
   createWebhookValidation,
   updateWebhookValidation,
@@ -12,7 +15,7 @@ import {
   listWebhooksValidation,
   deliveryLogsValidation,
 } from './webhook.validation';
-import { validateRequest } from '../../middlewares/validateRequest';
+
 
 const router = Router();
 

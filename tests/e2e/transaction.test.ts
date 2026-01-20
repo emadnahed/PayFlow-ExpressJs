@@ -125,12 +125,10 @@ describe('Transaction Endpoints', () => {
     });
 
     it('should reject transaction without authentication', async () => {
-      const response = await request(app)
-        .post('/transactions')
-        .send({
-          receiverId: 'user_123',
-          amount: 100,
-        });
+      const response = await request(app).post('/transactions').send({
+        receiverId: 'user_123',
+        amount: 100,
+      });
 
       expect(response.status).toBe(401);
     });
@@ -305,9 +303,9 @@ describe('Transaction Endpoints', () => {
         .set('Authorization', `Bearer ${sender.accessToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.transactions.every(
-        (t: { status: string }) => t.status === 'INITIATED'
-      )).toBe(true);
+      expect(
+        response.body.data.transactions.every((t: { status: string }) => t.status === 'INITIATED')
+      ).toBe(true);
     });
 
     it('should paginate results', async () => {
@@ -378,7 +376,8 @@ describe('Transaction State Machine', () => {
   });
 
   it('should allow valid state transition: INITIATED -> DEBITED', async () => {
-    const { transactionService } = await import('../../src/services/transaction/transaction.service');
+    const { transactionService } =
+      await import('../../src/services/transaction/transaction.service');
     const sender = await createTestUser(app, { email: 'sender@test.com' });
     const receiver = await createTestUser(app, { email: 'receiver@test.com' });
 
@@ -402,7 +401,8 @@ describe('Transaction State Machine', () => {
   });
 
   it('should reject invalid state transition: INITIATED -> COMPLETED', async () => {
-    const { transactionService } = await import('../../src/services/transaction/transaction.service');
+    const { transactionService } =
+      await import('../../src/services/transaction/transaction.service');
     const sender = await createTestUser(app, { email: 'sender@test.com' });
     const receiver = await createTestUser(app, { email: 'receiver@test.com' });
 
@@ -427,7 +427,8 @@ describe('Transaction State Machine', () => {
   });
 
   it('should not allow transitions from terminal states', async () => {
-    const { transactionService } = await import('../../src/services/transaction/transaction.service');
+    const { transactionService } =
+      await import('../../src/services/transaction/transaction.service');
     const sender = await createTestUser(app, { email: 'sender@test.com' });
     const receiver = await createTestUser(app, { email: 'receiver@test.com' });
 
@@ -449,8 +450,8 @@ describe('Transaction State Machine', () => {
     await transactionService.updateStatus(txnId, TransactionStatus.FAILED);
 
     // Try to transition from FAILED
-    await expect(
-      transactionService.updateStatus(txnId, TransactionStatus.DEBITED)
-    ).rejects.toThrow('Invalid state transition');
+    await expect(transactionService.updateStatus(txnId, TransactionStatus.DEBITED)).rejects.toThrow(
+      'Invalid state transition'
+    );
   });
 });

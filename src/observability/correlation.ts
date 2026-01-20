@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuid } from 'uuid';
+
 import { asyncLocalStorage, LogContext } from './log-context';
 import { logger } from './logger';
 
@@ -9,11 +10,7 @@ import { logger } from './logger';
  * - Stores it in AsyncLocalStorage for access throughout the request lifecycle
  * - Adds correlation ID to response headers
  */
-export const correlationMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const correlationMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const correlationId =
     (req.headers['x-correlation-id'] as string) ||
     (req.headers['x-request-id'] as string) ||

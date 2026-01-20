@@ -5,6 +5,7 @@
  */
 
 import { Queue, Job } from 'bullmq';
+
 import { queueConnection, notificationJobOptions, QUEUE_NAMES } from './queue.config';
 
 /**
@@ -51,10 +52,13 @@ let notificationQueue: Queue<NotificationJobData, NotificationJobResult> | null 
  */
 export function getNotificationQueue(): Queue<NotificationJobData, NotificationJobResult> {
   if (!notificationQueue) {
-    notificationQueue = new Queue<NotificationJobData, NotificationJobResult>(QUEUE_NAMES.NOTIFICATIONS, {
-      connection: queueConnection,
-      defaultJobOptions: notificationJobOptions,
-    });
+    notificationQueue = new Queue<NotificationJobData, NotificationJobResult>(
+      QUEUE_NAMES.NOTIFICATIONS,
+      {
+        connection: queueConnection,
+        defaultJobOptions: notificationJobOptions,
+      }
+    );
     console.log('[Notification Queue] Initialized');
   }
   return notificationQueue;
@@ -63,7 +67,9 @@ export function getNotificationQueue(): Queue<NotificationJobData, NotificationJ
 /**
  * Add a notification job to the queue
  */
-export async function enqueueNotification(data: NotificationJobData): Promise<Job<NotificationJobData, NotificationJobResult>> {
+export async function enqueueNotification(
+  data: NotificationJobData
+): Promise<Job<NotificationJobData, NotificationJobResult>> {
   const queue = getNotificationQueue();
   const job = await queue.add(`notification:${data.type}`, data, {
     jobId: data.notificationId, // Use notification ID for idempotency

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+
 import { config } from './index';
 
 let isConnected = false;
@@ -12,10 +13,10 @@ export const connectDatabase = async (): Promise<void> => {
   try {
     // Optimized connection options for I/O-bound workloads
     const conn = await mongoose.connect(config.mongodb.uri, {
-      maxPoolSize: 10,        // Max connections in pool (default: 100, reduced for memory)
-      minPoolSize: 2,         // Keep minimum connections warm
-      maxIdleTimeMS: 30000,   // Close idle connections after 30s
-      serverSelectionTimeoutMS: 5000,  // Fail fast on connection issues
+      maxPoolSize: 10, // Max connections in pool (default: 100, reduced for memory)
+      minPoolSize: 2, // Keep minimum connections warm
+      maxIdleTimeMS: 30000, // Close idle connections after 30s
+      serverSelectionTimeoutMS: 5000, // Fail fast on connection issues
     });
     isConnected = true;
     console.log(`MongoDB connected: ${conn.connection.host}`);

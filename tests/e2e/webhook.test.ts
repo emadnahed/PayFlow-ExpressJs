@@ -376,7 +376,10 @@ describe('Webhook API Tests', () => {
       const webhookId = createRes.body.data.webhook.webhookId;
 
       // Simulate failures by updating directly
-      await WebhookSubscription.updateOne({ webhookId }, { $set: { failureCount: 5, isActive: false } });
+      await WebhookSubscription.updateOne(
+        { webhookId },
+        { $set: { failureCount: 5, isActive: false } }
+      );
 
       // Reactivate
       const response = await request(app)
@@ -549,10 +552,7 @@ describe('Webhook Service Tests', () => {
       const secret = 'test-secret-key';
 
       const data = JSON.stringify(payload);
-      const expectedSignature = crypto
-        .createHmac('sha256', secret)
-        .update(data)
-        .digest('hex');
+      const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('hex');
 
       // This verifies the signature format we use
       expect(expectedSignature).toMatch(/^[a-f0-9]{64}$/);

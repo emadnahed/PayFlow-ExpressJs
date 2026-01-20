@@ -32,9 +32,7 @@ export const createTestUser = async (
     ...overrides,
   };
 
-  const response = await request(app)
-    .post('/auth/register')
-    .send(defaultUser);
+  const response = await request(app).post('/auth/register').send(defaultUser);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create test user: ${JSON.stringify(response.body)}`);
@@ -56,9 +54,7 @@ export const getAuthToken = async (
   email: string,
   password: string
 ): Promise<string> => {
-  const response = await request(app)
-    .post('/auth/login')
-    .send({ email, password });
+  const response = await request(app).post('/auth/login').send({ email, password });
 
   if (response.status !== 200) {
     throw new Error(`Failed to login: ${JSON.stringify(response.body)}`);
@@ -72,10 +68,7 @@ export const cleanupTestUsers = async (): Promise<void> => {
   await Wallet.deleteMany({});
 };
 
-export const authenticatedRequest = (
-  app: Application,
-  token: string
-) => {
+export const authenticatedRequest = (app: Application, token: string) => {
   return {
     get: (url: string) => request(app).get(url).set('Authorization', `Bearer ${token}`),
     post: (url: string) => request(app).post(url).set('Authorization', `Bearer ${token}`),

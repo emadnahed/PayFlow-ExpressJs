@@ -6,11 +6,13 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { getRedisClient, isRedisConnected } from '../config/redis';
+
 import { config } from '../config';
+import { getRedisClient, isRedisConnected } from '../config/redis';
 import { logger } from '../observability';
-import { ApiError } from './errorHandler';
 import { ErrorCode } from '../types/errors';
+
+import { ApiError } from './errorHandler';
 
 /**
  * Interface for authenticated request
@@ -109,7 +111,7 @@ export const idempotencyMiddleware = async (
         statusCode: res.statusCode,
         body,
         headers: {
-          'content-type': res.getHeader('content-type') as string || 'application/json',
+          'content-type': (res.getHeader('content-type') as string) || 'application/json',
         },
         cachedAt: new Date().toISOString(),
       };
@@ -164,11 +166,7 @@ export const idempotencyForMutations = async (
  * Validate idempotency key format
  * Keys should be alphanumeric with dashes/underscores, max 64 chars
  */
-export const validateIdempotencyKey = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const validateIdempotencyKey = (req: Request, res: Response, next: NextFunction): void => {
   const idempotencyKey = req.headers['x-idempotency-key'] as string | undefined;
 
   if (!idempotencyKey) {
