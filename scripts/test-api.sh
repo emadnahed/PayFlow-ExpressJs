@@ -392,9 +392,21 @@ test_wallet_endpoints() {
     make_request "GET" "/wallets/me/history"
     check_status "200" "Get history successful"
 
-    print_test "Get wallet history with pagination"
-    make_request "GET" "/wallets/me/history?limit=5&offset=0"
-    check_status "200" "Paginated history successful"
+    print_subheader "Wallet History Pagination"
+
+    print_test "Get history with limit=2"
+    make_request "GET" "/wallets/me/history?limit=2"
+    if check_status "200" "Paginated history (limit=2)"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.operations | length')
+        print_info "Returned $count operations (limit=2)"
+    fi
+
+    print_test "Get history with offset"
+    make_request "GET" "/wallets/me/history?limit=1&offset=1"
+    if check_status "200" "Paginated history with offset"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.operations | length')
+        print_info "Returned $count operations (offset=1)"
+    fi
 }
 
 # ============================================================
@@ -479,24 +491,65 @@ test_transaction_endpoints() {
 
     print_test "List all transactions"
     make_request "GET" "/transactions"
-    check_status "200" "List transactions successful"
+    if check_status "200" "List transactions successful"; then
+        local total=$(extract_json "$LAST_RESPONSE" '.data.pagination.total')
+        local count=$(extract_json "$LAST_RESPONSE" '.data.transactions | length')
+        print_info "Total: $total, Returned: $count"
+    fi
 
-    print_test "List transactions with pagination"
-    make_request "GET" "/transactions?limit=10&offset=0"
-    check_status "200" "Paginated transactions successful"
-
-    print_test "Filter transactions by status"
-    make_request "GET" "/transactions?status=INITIATED"
-    check_status "200" "Filtered transactions successful"
-
-    # Create another transaction for more data
-    print_test "Create another transaction"
+    # Create another transaction for pagination testing
+    print_test "Create second transaction for pagination test"
     make_request "POST" "/transactions" "{
         \"receiverId\": \"$RECEIVER_USER_ID\",
-        \"amount\": 50,
+        \"amount\": 25,
         \"description\": \"Second payment\"
     }" "X-Idempotency-Key: $(generate_idempotency_key)"
     check_status "201" "Second transaction created"
+
+    print_test "Create third transaction for pagination test"
+    make_request "POST" "/transactions" "{
+        \"receiverId\": \"$RECEIVER_USER_ID\",
+        \"amount\": 15,
+        \"description\": \"Third payment\"
+    }" "X-Idempotency-Key: $(generate_idempotency_key)"
+    check_status "201" "Third transaction created"
+
+    print_subheader "Transaction Pagination"
+
+    print_test "List with limit=1"
+    make_request "GET" "/transactions?limit=1"
+    if check_status "200" "Paginated transactions (limit=1)"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.transactions | length')
+        local total=$(extract_json "$LAST_RESPONSE" '.data.pagination.total')
+        local limit=$(extract_json "$LAST_RESPONSE" '.data.pagination.limit')
+        print_info "Returned: $count, Total: $total, Limit: $limit"
+    fi
+
+    print_test "List with offset=1"
+    make_request "GET" "/transactions?limit=2&offset=1"
+    if check_status "200" "Paginated transactions with offset"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.transactions | length')
+        local offset=$(extract_json "$LAST_RESPONSE" '.data.pagination.offset')
+        print_info "Returned: $count, Offset: $offset"
+    fi
+
+    print_test "Filter transactions by status"
+    make_request "GET" "/transactions?status=INITIATED"
+    if check_status "200" "Filtered transactions by INITIATED"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.transactions | length')
+        print_info "Found $count INITIATED transactions"
+    fi
+
+    print_test "Filter transactions by COMPLETED status"
+    make_request "GET" "/transactions?status=COMPLETED"
+    if check_status "200" "Filtered transactions by COMPLETED"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.transactions | length')
+        print_info "Found $count COMPLETED transactions"
+    fi
+
+    print_test "Combined filter and pagination"
+    make_request "GET" "/transactions?limit=5&offset=0&status=COMPLETED"
+    check_status "200" "Combined filter and pagination successful"
 }
 
 # ============================================================
@@ -559,15 +612,42 @@ test_webhook_endpoints() {
     make_request "GET" "/webhooks/webhook_nonexistent123"
     check_status "404" "Non-existent webhook returns 404"
 
-    print_subheader "List Webhooks"
+    print_subheader "List Webhooks with Pagination"
 
     print_test "List all webhooks"
     make_request "GET" "/webhooks"
-    check_status "200" "List webhooks successful"
+    if check_status "200" "List webhooks successful"; then
+        local total=$(extract_json "$LAST_RESPONSE" '.data.total')
+        local count=$(extract_json "$LAST_RESPONSE" '.data.webhooks | length')
+        print_info "Total: $total, Returned: $count"
+    fi
 
-    print_test "List webhooks with filter"
+    print_test "List webhooks with limit=1"
+    make_request "GET" "/webhooks?limit=1"
+    if check_status "200" "Paginated webhooks (limit=1)"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.webhooks | length')
+        local limit=$(extract_json "$LAST_RESPONSE" '.data.limit')
+        print_info "Returned: $count, Limit: $limit"
+    fi
+
+    print_test "List webhooks with offset"
+    make_request "GET" "/webhooks?limit=1&offset=1"
+    if check_status "200" "Paginated webhooks with offset"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.webhooks | length')
+        local offset=$(extract_json "$LAST_RESPONSE" '.data.offset')
+        print_info "Returned: $count, Offset: $offset"
+    fi
+
+    print_test "Filter webhooks by isActive=true"
     make_request "GET" "/webhooks?isActive=true"
-    check_status "200" "Filtered webhooks successful"
+    if check_status "200" "Filtered active webhooks"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.webhooks | length')
+        print_info "Found $count active webhooks"
+    fi
+
+    print_test "Combined filter and pagination"
+    make_request "GET" "/webhooks?isActive=true&limit=10&offset=0"
+    check_status "200" "Combined filter and pagination successful"
 
     print_subheader "Update Webhook"
 
@@ -595,15 +675,44 @@ test_webhook_endpoints() {
     }"
     check_status "200" "Webhook reactivated"
 
-    print_subheader "Webhook Delivery Logs"
+    print_subheader "Webhook Delivery Logs with Pagination"
 
     print_test "Get webhook delivery logs"
     make_request "GET" "/webhooks/${WEBHOOK_ID}/logs"
-    check_status "200" "Get delivery logs successful"
+    if check_status "200" "Get delivery logs successful"; then
+        local total=$(extract_json "$LAST_RESPONSE" '.data.total')
+        local count=$(extract_json "$LAST_RESPONSE" '.data.deliveries | length')
+        print_info "Total: $total, Returned: $count"
+    fi
 
-    print_test "Get delivery logs with filter"
+    print_test "Get delivery logs with limit"
+    make_request "GET" "/webhooks/${WEBHOOK_ID}/logs?limit=5"
+    if check_status "200" "Paginated delivery logs (limit=5)"; then
+        local limit=$(extract_json "$LAST_RESPONSE" '.data.limit')
+        print_info "Limit: $limit"
+    fi
+
+    print_test "Get delivery logs with offset"
+    make_request "GET" "/webhooks/${WEBHOOK_ID}/logs?limit=5&offset=0"
+    if check_status "200" "Paginated delivery logs with offset"; then
+        local offset=$(extract_json "$LAST_RESPONSE" '.data.offset')
+        print_info "Offset: $offset"
+    fi
+
+    print_test "Filter delivery logs by status=PENDING"
     make_request "GET" "/webhooks/${WEBHOOK_ID}/logs?status=PENDING"
-    check_status "200" "Filtered delivery logs successful"
+    if check_status "200" "Filtered delivery logs (PENDING)"; then
+        local count=$(extract_json "$LAST_RESPONSE" '.data.deliveries | length')
+        print_info "Found $count PENDING deliveries"
+    fi
+
+    print_test "Filter delivery logs by status=SUCCESS"
+    make_request "GET" "/webhooks/${WEBHOOK_ID}/logs?status=SUCCESS"
+    check_status "200" "Filtered delivery logs (SUCCESS)"
+
+    print_test "Combined filter and pagination for logs"
+    make_request "GET" "/webhooks/${WEBHOOK_ID}/logs?status=PENDING&limit=10&offset=0"
+    check_status "200" "Combined filter and pagination for delivery logs"
 
     print_subheader "Delete Webhook"
 

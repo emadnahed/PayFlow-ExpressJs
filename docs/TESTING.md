@@ -1,5 +1,23 @@
 # PayFlow Testing Guide
 
+## Quick Start
+
+```bash
+# 1. Unit tests (no infrastructure needed)
+npm run test:unit
+
+# 2. E2E tests with Docker
+npm run docker:test:all      # Start MongoDB + Redis + API
+npm run test:e2e:docker      # Run 195 E2E tests
+npm run docker:test:down     # Cleanup
+
+# 3. cURL API tests (requires running API)
+npm run docker:test:all      # Start infrastructure
+npm run test:api             # Run 80 cURL tests
+```
+
+---
+
 ## Overview
 
 PayFlow uses a tiered testing strategy to ensure code quality while maintaining fast feedback loops. Tests are organized by their infrastructure requirements.
@@ -24,22 +42,131 @@ PayFlow uses a tiered testing strategy to ensure code quality while maintaining 
 │  Complete HTTP flow testing with all services running           │
 │  Command: npm run test:e2e                                      │
 └─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  TIER 4: cURL API Tests (Running API Required)                  │
+│  Manual API testing with jq beautification                      │
+│  Command: npm run test:api                                      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Test Commands
+## All Test Commands
 
-| Command | Description | Infrastructure Required |
-|---------|-------------|------------------------|
-| `npm test` | Run all tests | MongoDB + Redis |
-| `npm run test:unit` | Unit tests only | None |
-| `npm run test:integration` | Integration tests | MongoDB + Redis |
-| `npm run test:e2e` | End-to-end tests | MongoDB + Redis |
-| `npm run test:coverage` | Tests with coverage report | MongoDB + Redis |
-| `npm run test:watch` | Watch mode for development | MongoDB + Redis |
-| `npm run test:ci` | CI pipeline tests | MongoDB + Redis |
-| `npm run chaos-test` | Chaos/reliability tests | MongoDB + Redis |
+### Unit Tests (No Infrastructure)
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:unit` | Run 462 unit tests (fast, isolated) |
+
+### Jest Tests (Require MongoDB + Redis)
+
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run all Jest tests |
+| `npm run test:watch` | Watch mode for development |
+| `npm run test:verbose` | Verbose output with details |
+| `npm run test:coverage` | Generate coverage report |
+| `npm run test:ci` | CI pipeline (with coverage + force exit) |
+| `npm run test:integration` | Integration tests only |
+| `npm run test:e2e` | E2E tests (local Redis 6379) |
+| `npm run test:e2e:docker` | E2E tests (Docker Redis 6380) |
+| `npm run test:chaos` | Chaos/failure scenario tests |
+| `npm run test:load` | Load/performance tests |
+
+### cURL API Tests (Require Running API)
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:api` | Run 80 cURL tests (Docker port 3001) |
+| `npm run test:api:local` | cURL tests against local dev (port 3000) |
+| `npm run test:api:docker` | cURL tests against Docker (port 3001) |
+| `npm run test:api:verbose` | cURL tests with request body output |
+
+### Docker Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run docker:test` | Start only MongoDB + Redis |
+| `npm run docker:test:all` | Start MongoDB + Redis + API |
+| `npm run docker:test:down` | Stop all test containers |
+| `npm run docker:test:logs` | View API container logs |
+
+---
+
+## Common Workflows
+
+### Run Unit Tests Only (No Setup Required)
+
+```bash
+npm run test:unit
+```
+
+### Run E2E Tests with Docker
+
+```bash
+# Start test infrastructure
+npm run docker:test:all
+
+# Run E2E tests
+npm run test:e2e:docker
+
+# View logs if needed
+npm run docker:test:logs
+
+# Cleanup
+npm run docker:test:down
+```
+
+### Run cURL API Tests
+
+```bash
+# Start test infrastructure (includes API)
+npm run docker:test:all
+
+# Run cURL tests
+npm run test:api
+
+# Or with verbose output
+npm run test:api:verbose
+
+# Cleanup
+npm run docker:test:down
+```
+
+### Run All Tests for CI
+
+```bash
+npm run docker:test:all
+npm run test:ci
+npm run docker:test:down
+```
+
+### Development Workflow
+
+```bash
+# Start infrastructure
+npm run docker:test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Or run specific test file
+npm test -- tests/e2e/auth.test.ts
+```
+
+---
+
+## Port Configuration
+
+| Service | Development | Docker Test |
+|---------|-------------|-------------|
+| API | 3000 | 3001 |
+| MongoDB | 27017 | 27018 |
+| Redis | 6379 | 6380 |
+
+**Note:** Docker test uses different ports to avoid conflicts with local development.
 
 ---
 

@@ -7,14 +7,33 @@
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+
     "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "jest --watch --runInBand",
+    "test:verbose": "jest --runInBand --detectOpenHandles --verbose",
+    "test:coverage": "jest --runInBand --coverage",
+    "test:ci": "jest --runInBand --detectOpenHandles --forceExit --coverage",
+
     "test:unit": "jest --runInBand tests/unit",
     "test:integration": "jest --runInBand tests/integration",
     "test:e2e": "jest --runInBand tests/e2e",
-    "test:coverage": "jest --runInBand --coverage",
-    "test:ci": "jest --runInBand --detectOpenHandles --forceExit --coverage",
-    "test:verbose": "jest --runInBand --detectOpenHandles --verbose",
+    "test:e2e:docker": "REDIS_PORT=6380 jest --runInBand tests/e2e",
+
+    "test:api": "./scripts/test-api.sh",
+    "test:api:local": "API_URL=http://localhost:3000 ./scripts/test-api.sh",
+    "test:api:docker": "API_URL=http://localhost:3001 ./scripts/test-api.sh",
+    "test:api:verbose": "VERBOSE=true ./scripts/test-api.sh",
+
+    "test:load": "ts-node tests/load/transaction.load.ts",
+    "test:chaos": "jest --runInBand tests/chaos",
+
+    "docker:dev": "docker-compose -f docker/docker-compose.yml up -d",
+    "docker:dev:build": "docker-compose -f docker/docker-compose.yml up -d --build",
+    "docker:dev:down": "docker-compose -f docker/docker-compose.yml down",
+    "docker:dev:logs": "docker-compose -f docker/docker-compose.yml logs -f",
+    "docker:dev:restart": "docker-compose -f docker/docker-compose.yml restart",
+    "docker:dev:ps": "docker-compose -f docker/docker-compose.yml ps",
+
     "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker-compose -f docker/docker-compose.yml down",
     "docker:build": "docker-compose -f docker/docker-compose.yml build",
@@ -22,13 +41,16 @@
     "docker:test": "docker-compose -f docker/docker-compose.test.yml up -d mongodb-test redis-test",
     "docker:test:all": "docker-compose -f docker/docker-compose.test.yml up -d",
     "docker:test:down": "docker-compose -f docker/docker-compose.test.yml down",
+    "docker:test:logs": "docker-compose -f docker/docker-compose.test.yml logs -f api-test",
     "docker:prod": "docker-compose -f docker/docker-compose.prod.yml up -d",
     "docker:prod:down": "docker-compose -f docker/docker-compose.prod.yml down",
     "docker:prod:scale": "docker-compose -f docker/docker-compose.prod.yml up -d --scale api=3",
+
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'",
+
     "load-test": "ts-node tests/load/transaction.load.ts",
     "chaos-test": "jest --runInBand tests/chaos"
   },
