@@ -288,25 +288,26 @@ describe('Notification Worker', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should log notification details during processing', () => {
+    it('should log notification details during processing', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const WorkerMock = jest.requireMock('bullmq').Worker;
 
-      // Simulate what processNotificationJob would log
-      const jobData = {
-        userId: 'user_123',
-        type: 'TRANSACTION_COMPLETED',
-        title: 'Payment Complete',
-        message: 'Your payment was successful',
-        data: { amount: 100 },
+      startNotificationWorker();
+
+      // Get the processor function passed to the Worker constructor
+      const processNotificationJob = WorkerMock.mock.calls[0][1];
+      const mockJob = {
+        data: {
+          userId: 'user_123',
+          type: 'TRANSACTION_COMPLETED',
+          title: 'Payment Complete',
+          message: 'Your payment was successful',
+          data: { amount: 100 },
+        },
       };
 
-      console.log(`[Notification Worker] Processing notification for user ${jobData.userId}`);
-      console.log(`[Notification Worker] Type: ${jobData.type}`);
-      console.log(`[Notification Worker] Title: ${jobData.title}`);
-      console.log(`[Notification Worker] Message: ${jobData.message}`);
-      console.log(`[Notification Worker] Data: ${JSON.stringify(jobData.data)}`);
+      await processNotificationJob(mockJob);
 
-      expect(consoleSpy).toHaveBeenCalledTimes(5);
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Processing notification for user user_123')
       );
