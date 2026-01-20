@@ -21,6 +21,7 @@ import {
   metricsMiddleware,
   getMetrics,
   getMetricsContentType,
+  logger,
 } from './observability';
 import healthRoutes from './routes/health';
 import { ledgerRoutes } from './services/ledger';
@@ -109,7 +110,8 @@ export const createApp = (): Application => {
     try {
       res.set('Content-Type', getMetricsContentType());
       res.send(await getMetrics());
-    } catch (_error) {
+    } catch (error) {
+      logger.error({ err: error }, 'Error collecting metrics');
       res.status(500).send('Error collecting metrics');
     }
   });
