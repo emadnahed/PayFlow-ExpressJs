@@ -1,0 +1,168 @@
+name: Scheduled Performance Tests
+
+on:
+  schedule:
+    # Run smoke tests every 6 hours
+    - cron: '0 */6 * * *'
+    # Run load tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+    # Run soak tests weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+env:
+  K6_VERSION: '0.45.0'
+
+jobs:
+  determine-test-type:
+    name: Determine Test Type
+    runs-on: ubuntu-latest
+    outputs:
+      test_type: ${{ steps.set-type.outputs.test_type }}
+
+    steps:
+      - name: Set test type based on schedule
+        id: set-type
+        run: |
+          # Get current hour and day
+          HOUR=$(date -u +%H)
+          DAY=$(date -u +%u)  # 1=Monday, 7=Sunday
+
+          if [[ "$DAY" == "7" && "$HOUR" == "03" ]]; then
+            echo "test_type=soak" >> $GITHUB_OUTPUT
+          elif [[ "$HOUR" == "02" ]]; then
+            echo "test_type=load" >> $GITHUB_OUTPUT
+          else
+            echo "test_type=smoke" >> $GITHUB_OUTPUT
+          fi
+
+  smoke-tests:
+    name: Scheduled Smoke Tests
+    runs-on: ubuntu-latest
+    needs: determine-test-type
+    if: needs.determine-test-type.outputs.test_type == 'smoke'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Create results directory
+        run: mkdir -p load-testing/results
+
+      - name: Run smoke tests
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=staging \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            --out json=results/scheduled_smoke_$(date +%Y%m%d_%H%M%S).json \
+            tests/smoke/smoke.test.js
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-smoke-${{ github.run_id }}
+          path: load-testing/results/
+          retention-days: 14
+
+  load-tests:
+    name: Scheduled Load Tests
+    runs-on: ubuntu-latest
+    needs: determine-test-type
+    if: needs.determine-test-type.outputs.test_type == 'load'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Create results directory
+        run: mkdir -p load-testing/results
+
+      - name: Run load tests
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=staging \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            --out json=results/scheduled_load_$(date +%Y%m%d_%H%M%S).json \
+            tests/load/api.test.js
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-load-${{ github.run_id }}
+          path: load-testing/results/
+          retention-days: 30
+
+  soak-tests:
+    name: Scheduled Soak Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 240  # 4 hours
+    needs: determine-test-type
+    if: needs.determine-test-type.outputs.test_type == 'soak'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Create results directory
+        run: mkdir -p load-testing/results
+
+      - name: Run soak tests (2 hour duration)
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=staging \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            -e SOAK_DURATION=2h \
+            --out json=results/scheduled_soak_$(date +%Y%m%d_%H%M%S).json \
+            tests/soak/soak.test.js
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-soak-${{ github.run_id }}
+          path: load-testing/results/
+          retention-days: 60
+
+  alert-on-failure:
+    name: Alert on Failure
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, load-tests, soak-tests]
+    if: failure()
+
+    steps:
+      - name: Send failure notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-type: application/json' \
+            --data '{
+              "text": "⚠️ Scheduled performance tests FAILED for PayFlow",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  {"title": "Repository", "value": "${{ github.repository }}", "short": true},
+                  {"title": "Run ID", "value": "${{ github.run_id }}", "short": true},
+                  {"title": "Workflow", "value": "${{ github.workflow }}", "short": true}
+                ]
+              }]
+            }'
+        continue-on-error: true

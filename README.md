@@ -126,7 +126,15 @@ npm run test:unit        # Unit tests
 npm run test:e2e         # E2E tests
 npm run test:coverage    # With coverage report
 npm run chaos-test       # Chaos testing
-npm run load-test        # Load testing
+
+# Load Testing (k6)
+cd load-testing
+npm run test:smoke:docker    # Smoke tests against local Docker
+npm run test:load:docker     # Load tests against local Docker
+npm run test:smoke:vps       # Smoke tests against VPS
+npm run test:load:vps        # Load tests against VPS
+npm run test:stress:docker   # Stress tests (find breaking points)
+npm run test:soak:docker     # Soak tests (long-running stability)
 
 # Code Quality
 npm run lint             # Run ESLint
@@ -167,6 +175,16 @@ tests/
 ├── e2e/                # End-to-end tests
 ├── chaos/              # Failure scenario tests
 └── load/               # Performance tests
+
+load-testing/           # k6 Load Testing Suite
+├── config/             # Environment configurations
+├── tests/              # Test scenarios
+│   ├── smoke/          # Quick health checks
+│   ├── load/           # Standard load tests
+│   ├── stress/         # Breaking point tests
+│   └── soak/           # Long-running stability
+├── scripts/            # Report generation
+└── .github/workflows/  # CI/CD integration
 ```
 
 ## Environment Variables
@@ -202,7 +220,7 @@ The project includes comprehensive test coverage:
 - **Integration Tests** - Service interactions
 - **E2E Tests** - Full API flow testing
 - **Chaos Tests** - Failure scenario validation
-- **Load Tests** - Performance benchmarking
+- **Load Tests** - Performance benchmarking with k6
 
 ```bash
 # Run full test suite
@@ -210,7 +228,16 @@ npm run test:ci
 
 # View coverage report
 open coverage/lcov-report/index.html
+
+# k6 Load Testing (requires k6 installed)
+cd load-testing
+npm run test:smoke:docker    # Quick health checks
+npm run test:load:docker     # Standard load tests
+npm run test:stress:docker   # Find breaking points
+npm run test:soak:docker     # Long-running stability
 ```
+
+See [load-testing/README.md](load-testing/README.md) for detailed load testing documentation.
 
 ## Production Deployment
 
