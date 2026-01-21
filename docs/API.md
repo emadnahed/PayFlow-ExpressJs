@@ -673,3 +673,21 @@ Access the interactive API documentation at:
 
 - **Scalar API Reference:** `http://localhost:3000/api-docs`
 - **OpenAPI JSON Spec:** `http://localhost:3000/api-docs.json`
+
+---
+
+## Load Testing
+
+The API includes a comprehensive k6 load testing suite. See [load-testing/README.md](../load-testing/README.md) for:
+
+- **Smoke Tests** - Quick health checks before deployment
+- **Load Tests** - Standard performance validation
+- **Stress Tests** - Finding system breaking points
+- **Soak Tests** - Long-running stability tests
+
+```bash
+# Quick start
+cd load-testing
+npm run test:smoke:docker    # Test against local Docker
+npm run test:smoke:vps       # Test against VPS
+```

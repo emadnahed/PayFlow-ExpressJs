@@ -1,0 +1,223 @@
+name: PayFlow Load Tests
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'src/**'
+      - 'load-testing/**'
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - 'src/**'
+      - 'load-testing/**'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+          - soak
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - local
+          - staging
+          - production
+      vus:
+        description: 'Number of virtual users (for load tests)'
+        required: false
+        default: '50'
+      duration:
+        description: 'Test duration (e.g., 5m, 1h)'
+        required: false
+        default: '5m'
+
+env:
+  K6_VERSION: '0.45.0'
+
+jobs:
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_type == 'smoke')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Run smoke tests
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=${{ github.event.inputs.environment || 'staging' }} \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            --out json=results/smoke_results.json \
+            tests/smoke/smoke.test.js
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: load-testing/results/
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let summary = '## 🔥 Smoke Test Results\n\n';
+            summary += '✅ Smoke tests completed. Check artifacts for detailed results.\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  load-tests:
+    name: Load Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_type == 'load'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Run load tests
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=${{ github.event.inputs.environment }} \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            --vus ${{ github.event.inputs.vus || '50' }} \
+            --duration ${{ github.event.inputs.duration || '5m' }} \
+            --out json=results/load_results.json \
+            tests/load/api.test.js
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: load-testing/results/
+          retention-days: 30
+
+  stress-tests:
+    name: Stress Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_type == 'stress'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Run stress tests
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=${{ github.event.inputs.environment }} \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            --out json=results/stress_results.json \
+            tests/stress/stress.test.js
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results
+          path: load-testing/results/
+          retention-days: 30
+
+  soak-tests:
+    name: Soak Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 480  # 8 hours max
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_type == 'soak'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: ${{ env.K6_VERSION }}
+
+      - name: Run soak tests
+        working-directory: load-testing
+        run: |
+          k6 run \
+            -e ENV=${{ github.event.inputs.environment }} \
+            -e API_URL=${{ secrets.STAGING_API_URL || 'http://localhost:3000' }} \
+            -e SOAK_DURATION=${{ github.event.inputs.duration || '1h' }} \
+            --out json=results/soak_results.json \
+            tests/soak/soak.test.js
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-test-results
+          path: load-testing/results/
+          retention-days: 30
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, load-tests, stress-tests, soak-tests]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+        continue-on-error: true
+
+      - name: Send notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+            -H 'Content-type: application/json' \
+            --data '{
+              "text": "Load tests completed for PayFlow",
+              "attachments": [{
+                "color": "good",
+                "fields": [
+                  {"title": "Repository", "value": "${{ github.repository }}", "short": true},
+                  {"title": "Branch", "value": "${{ github.ref_name }}", "short": true},
+                  {"title": "Test Type", "value": "${{ github.event.inputs.test_type || 'smoke' }}", "short": true},
+                  {"title": "Environment", "value": "${{ github.event.inputs.environment || 'staging' }}", "short": true}
+                ]
+              }]
+            }'
+        continue-on-error: true

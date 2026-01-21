@@ -1,0 +1,55 @@
+{
+  "name": "payflow-load-testing",
+  "version": "1.0.0",
+  "description": "Load testing suite for PayFlow API using k6",
+  "scripts": {
+    "test:smoke": "k6 run tests/smoke/smoke.test.js",
+    "test:load": "k6 run tests/load/api.test.js",
+    "test:stress": "k6 run tests/stress/stress.test.js",
+    "test:spike": "k6 run tests/stress/spike.test.js",
+    "test:soak": "k6 run tests/soak/soak.test.js",
+    "test:journey": "k6 run tests/load/user-journey.test.js",
+    "test:health": "k6 run tests/smoke/health.test.js",
+
+    "test:smoke:local": "k6 run -e ENV=local tests/smoke/smoke.test.js",
+    "test:load:local": "k6 run -e ENV=local tests/load/api.test.js",
+    "test:stress:local": "k6 run -e ENV=local tests/stress/stress.test.js",
+
+    "test:smoke:docker": "k6 run -e ENV=docker-local tests/smoke/smoke.test.js",
+    "test:load:docker": "k6 run -e ENV=docker-local tests/load/api.test.js",
+    "test:stress:docker": "k6 run -e ENV=docker-local tests/stress/stress.test.js",
+    "test:spike:docker": "k6 run -e ENV=docker-local tests/stress/spike.test.js",
+    "test:soak:docker": "k6 run -e ENV=docker-local tests/soak/soak.test.js",
+    "test:journey:docker": "k6 run -e ENV=docker-local tests/load/user-journey.test.js",
+    "test:all:docker": "npm run test:smoke:docker && npm run test:load:docker",
+
+    "test:smoke:vps": "k6 run -e ENV=vps tests/smoke/smoke.test.js",
+    "test:load:vps": "k6 run -e ENV=vps tests/load/api.test.js",
+    "test:stress:vps": "k6 run -e ENV=vps tests/stress/stress.test.js",
+    "test:spike:vps": "k6 run -e ENV=vps tests/stress/spike.test.js",
+    "test:soak:vps": "k6 run -e ENV=vps tests/soak/soak.test.js",
+    "test:journey:vps": "k6 run -e ENV=vps tests/load/user-journey.test.js",
+    "test:all:vps": "npm run test:smoke:vps && npm run test:load:vps",
+
+    "test:smoke:staging": "k6 run -e ENV=staging tests/smoke/smoke.test.js",
+    "test:load:staging": "k6 run -e ENV=staging tests/load/api.test.js",
+    "test:stress:staging": "k6 run -e ENV=staging tests/stress/stress.test.js",
+
+    "report:generate": "node scripts/generate-report.js",
+    "report:html": "k6 run --out json=results/test_results.json tests/load/api.test.js && node scripts/generate-report.js results/test_results.json",
+    "report:compare": "node scripts/compare-baselines.js",
+
+    "test:docker:quick": "k6 run -e ENV=docker-local --vus 5 --duration 30s tests/smoke/smoke.test.js",
+    "test:vps:quick": "k6 run -e ENV=vps --vus 5 --duration 30s tests/smoke/smoke.test.js"
+  },
+  "keywords": [
+    "k6",
+    "load-testing",
+    "performance",
+    "payflow",
+    "docker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {}
+}

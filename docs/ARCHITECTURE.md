@@ -328,6 +328,63 @@ nodejs_eventloop_lag_seconds
 - Connection pooling
 - Mongoose lean() for read operations
 
+## Load Testing Infrastructure
+
+PayFlow includes a comprehensive k6-based load testing suite for performance validation.
+
+### Load Testing Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    k6 Load Testing Suite                         │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Smoke Tests  │  │ Load Tests   │  │  Stress/Spike Tests  │  │
+│  │ (Health)     │  │ (Normal)     │  │  (Breaking Point)    │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Soak Tests   │  │ User Journey │  │  Report Generation   │  │
+│  │ (Stability)  │  │ (Realistic)  │  │  (HTML/JSON)         │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+           ┌──────────────────┼──────────────────┐
+           ▼                  ▼                  ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│   Docker Local   │ │      VPS         │ │    Staging       │
+│   (localhost)    │ │  (Remote)        │ │  (Pre-prod)      │
+│                  │ │                  │ │                  │
+│  Port 3000       │ │  HTTPS endpoint  │ │  HTTPS endpoint  │
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+```
+
+### Test Types & Metrics
+
+| Test Type | Virtual Users | Duration | Purpose |
+|-----------|---------------|----------|---------|
+| Smoke | 1 | 1 min | Quick health validation |
+| Load | 10-100 | 16 min | Normal traffic simulation |
+| Stress | up to 500 | 22 min | Find system limits |
+| Spike | up to 400 | 15 min | Sudden load handling |
+| Soak | 30 | 1-12 hrs | Memory leak detection |
+
+### Performance Thresholds
+
+| Environment | p95 Response | p99 Response | Error Rate |
+|-------------|--------------|--------------|------------|
+| Local | <2000ms | <5000ms | <5% |
+| Staging | <1000ms | <2000ms | <1% |
+| Production | <500ms | <1000ms | <0.1% |
+
+### CI/CD Integration
+
+Load tests are integrated with GitHub Actions:
+
+- **Automated**: Smoke tests on push/PR
+- **Scheduled**: Load tests daily, soak tests weekly
+- **Manual**: Stress tests on-demand
+
 ## Directory Structure
 
 ```
@@ -356,6 +413,19 @@ src/
 ├── observability/         # Logs, metrics, tracing
 ├── docs/                  # OpenAPI specification
 └── routes/                # Route definitions
+
+load-testing/              # k6 Load Testing Suite
+├── config/                # Environment configurations
+│   ├── environments/     # local, docker, vps, staging, production
+│   ├── api-client.js     # API endpoint client
+│   └── test-utils.js     # Shared test utilities
+├── tests/
+│   ├── smoke/            # Quick health checks
+│   ├── load/             # Standard load tests
+│   ├── stress/           # Breaking point tests
+│   └── soak/             # Long-running stability
+├── scripts/               # Report generation
+└── .github/workflows/     # CI/CD integration
 ```
 
 ## Technology Stack
@@ -374,3 +444,4 @@ src/
 | Metrics | prom-client |
 | Tracing | OpenTelemetry |
 | API Docs | Scalar |
+| Load Testing | k6 |

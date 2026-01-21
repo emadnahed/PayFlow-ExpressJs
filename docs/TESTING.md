@@ -794,42 +794,132 @@ VERBOSE=true ./scripts/test-api.sh
 
 ---
 
-## Load Testing
+## Load Testing with k6
 
-Performance tests are in `tests/load/`:
+PayFlow includes a comprehensive k6-based load testing suite in the `load-testing/` directory.
+
+### Prerequisites
 
 ```bash
-# Run load tests (requires k6 or similar)
-npm run load-test
+# Install k6 (macOS)
+brew install k6
+
+# Install k6 (Linux)
+sudo apt-get install k6
+
+# Install k6 (Windows)
+choco install k6
 ```
 
-### Sample Load Test
+### Quick Start
 
-```typescript
-// tests/load/transaction.load.ts
+```bash
+cd load-testing
+
+# Test against local Docker containers
+npm run test:smoke:docker     # Quick health check (1 VU, 1 min)
+npm run test:load:docker      # Standard load test (10-100 VUs, 16 min)
+npm run test:stress:docker    # Find breaking points (up to 500 VUs)
+npm run test:soak:docker      # Long-running stability (30 VUs, 1+ hour)
+
+# Test against VPS
+npm run test:smoke:vps        # Quick health check
+npm run test:load:vps         # Standard load test
+k6 run -e ENV=vps -e API_URL=https://your-vps.com tests/smoke/smoke.test.js
+```
+
+### Test Types
+
+| Type | Purpose | VUs | Duration |
+|------|---------|-----|----------|
+| **Smoke** | Quick health checks | 1 | 1 min |
+| **Load** | Standard performance | 10-100 | 16 min |
+| **Stress** | Find breaking points | up to 500 | 22 min |
+| **Spike** | Sudden load spikes | up to 400 | 15 min |
+| **Soak** | Long-running stability | 30 | 1-12 hours |
+
+### Environment Configuration
+
+The load testing suite supports multiple environments:
+
+```bash
+# Local development (non-Docker)
+k6 run -e ENV=local tests/smoke/smoke.test.js
+
+# Docker containers on localhost
+k6 run -e ENV=docker-local tests/smoke/smoke.test.js
+
+# Docker containers on VPS
+k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com tests/smoke/smoke.test.js
+
+# Staging environment
+k6 run -e ENV=staging tests/smoke/smoke.test.js
+```
+
+### Performance Thresholds
+
+| Metric | Local | Staging | Production |
+|--------|-------|---------|------------|
+| p95 Response Time | <2000ms | <1000ms | <500ms |
+| p99 Response Time | <5000ms | <2000ms | <1000ms |
+| Error Rate | <5% | <1% | <0.1% |
+
+### Generating Reports
+
+```bash
+# Run test with JSON output
+k6 run --out json=results/test_results.json tests/load/api.test.js
+
+# Generate HTML report
+node scripts/generate-report.js results/test_results.json
+
+# Compare against baseline
+node scripts/compare-baselines.js results/test_results_summary.json
+```
+
+### CI/CD Integration
+
+Load tests are integrated with GitHub Actions:
+
+- **On Push/PR**: Smoke tests run automatically
+- **Manual Trigger**: Load, stress, and soak tests can be triggered manually
+- **Scheduled**: Smoke tests every 6 hours, load tests daily, soak tests weekly
+
+See [load-testing/README.md](../load-testing/README.md) for complete documentation.
+
+### Sample k6 Test
+
+```javascript
+// tests/load/api.test.js
+import { check, group, sleep } from 'k6';
 import http from 'k6/http';
-import { check } from 'k6';
 
 export const options = {
-  vus: 10,           // Virtual users
-  duration: '30s',   // Test duration
+  stages: [
+    { duration: '1m', target: 10 },   // Ramp up
+    { duration: '3m', target: 50 },   // Steady state
+    { duration: '1m', target: 0 },    // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<1000'],
+    http_req_failed: ['rate<0.01'],
+  },
 };
 
 export default function() {
-  const response = http.post('http://localhost:3000/transactions', {
-    receiverId: 'test-receiver',
-    amount: 10,
-  }, {
-    headers: {
-      'Authorization': `Bearer ${__ENV.TOKEN}`,
-      'Content-Type': 'application/json',
-    },
+  group('Authentication', function() {
+    const loginRes = http.post(`${__ENV.API_URL}/api/auth/login`,
+      JSON.stringify({ email: 'test@example.com', password: 'password' }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    check(loginRes, {
+      'login successful': (r) => r.status === 200,
+      'has token': (r) => JSON.parse(r.body).accessToken !== undefined,
+    });
   });
 
-  check(response, {
-    'status is 201': (r) => r.status === 201,
-    'response time < 500ms': (r) => r.timings.duration < 500,
-  });
+  sleep(1);
 }
 ```
 
