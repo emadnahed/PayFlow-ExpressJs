@@ -149,8 +149,10 @@ jobs:
     steps:
       - name: Send failure notification
         if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          curl -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-type: application/json' \
             --data '{
               "text": "⚠️ Scheduled performance tests FAILED for PayFlow",

@@ -76,21 +76,30 @@ jobs:
           path: load-testing/results/
           retention-days: 30
 
+      - name: Setup Node.js
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate PR comment
+        if: github.event_name == 'pull_request'
+        working-directory: load-testing
+        run: node scripts/post-pr-comment.js smoke results/
+
       - name: Comment on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-
-            let summary = '## 🔥 Smoke Test Results\n\n';
-            summary += '✅ Smoke tests completed. Check artifacts for detailed results.\n';
+            const commentBody = fs.readFileSync('load-testing/pr-comment-body.md', 'utf8');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: summary
+              body: commentBody
             });
 
   load-tests:
@@ -205,8 +214,10 @@ jobs:
 
       - name: Send notification
         if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          curl -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-type: application/json' \
             --data '{
               "text": "Load tests completed for PayFlow",
