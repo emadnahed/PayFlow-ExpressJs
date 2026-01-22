@@ -14,6 +14,7 @@
     "test:smoke:local": "k6 run -e ENV=local tests/smoke/smoke.test.js",
     "test:load:local": "k6 run -e ENV=local tests/load/api.test.js",
     "test:stress:local": "k6 run -e ENV=local tests/stress/stress.test.js",
+    "test:full:local": "npm run test:smoke:local && npm run test:load:local && npm run test:stress:local",
 
     "test:smoke:docker": "k6 run -e ENV=docker-local tests/smoke/smoke.test.js",
     "test:load:docker": "k6 run -e ENV=docker-local tests/load/api.test.js",
@@ -22,6 +23,7 @@
     "test:soak:docker": "k6 run -e ENV=docker-local tests/soak/soak.test.js",
     "test:journey:docker": "k6 run -e ENV=docker-local tests/load/user-journey.test.js",
     "test:all:docker": "npm run test:smoke:docker && npm run test:load:docker",
+    "test:full:docker": "npm run test:smoke:docker && npm run test:load:docker && npm run test:stress:docker",
 
     "test:smoke:vps": "k6 run -e ENV=vps tests/smoke/smoke.test.js",
     "test:load:vps": "k6 run -e ENV=vps tests/load/api.test.js",
@@ -30,10 +32,17 @@
     "test:soak:vps": "k6 run -e ENV=vps tests/soak/soak.test.js",
     "test:journey:vps": "k6 run -e ENV=vps tests/load/user-journey.test.js",
     "test:all:vps": "npm run test:smoke:vps && npm run test:load:vps",
+    "test:full:vps": "npm run test:smoke:vps && npm run test:load:vps && npm run test:stress:vps",
 
     "test:smoke:staging": "k6 run -e ENV=staging tests/smoke/smoke.test.js",
     "test:load:staging": "k6 run -e ENV=staging tests/load/api.test.js",
     "test:stress:staging": "k6 run -e ENV=staging tests/stress/stress.test.js",
+    "test:full:staging": "npm run test:smoke:staging && npm run test:load:staging && npm run test:stress:staging",
+
+    "test:smoke:production": "k6 run -e ENV=production tests/smoke/smoke.test.js",
+    "test:load:production": "k6 run -e ENV=production tests/load/api.test.js",
+    "test:stress:production": "k6 run -e ENV=production tests/stress/stress.test.js",
+    "test:full:production": "npm run test:smoke:production && npm run test:load:production && npm run test:stress:production",
 
     "report:generate": "node scripts/generate-report.js",
     "report:html": "k6 run --out json=results/test_results.json tests/load/api.test.js && node scripts/generate-report.js results/test_results.json",

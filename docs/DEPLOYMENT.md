@@ -22,6 +22,38 @@ npm run docker:up
 npm run dev
 ```
 
+## Infrastructure Management
+
+### Test Infrastructure (for running tests locally)
+
+| Command | Description |
+|---------|-------------|
+| `npm run infra:local:up` | Start test MongoDB (27018) + Redis (6380) |
+| `npm run infra:local:down` | Stop test infrastructure |
+| `npm run infra:local:status` | Check test infrastructure status |
+
+### Development Infrastructure (full Docker stack)
+
+| Command | Description |
+|---------|-------------|
+| `npm run infra:docker:up` | Start full Docker stack (API + DB + Redis) |
+| `npm run infra:docker:down` | Stop Docker stack |
+| `npm run infra:docker:status` | Check Docker stack status |
+
+### Quick Test Run
+
+```bash
+# Run all tests with automatic infrastructure management
+npm run test:run:local        # Local development
+npm run test:run:docker       # Docker-based
+
+# Or manually
+npm run infra:local:up        # Start test DBs
+npm run dev &                 # Start API
+npm run test:full:local       # Run all tests
+npm run infra:local:down      # Cleanup
+```
+
 ## Environment Configuration
 
 ### Required Variables

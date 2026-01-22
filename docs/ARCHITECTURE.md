@@ -270,6 +270,112 @@ Client                    Server                    Database
 6. **Input Validation**: express-validator sanitization
 7. **Idempotency**: Duplicate request prevention
 
+## Worker-Based Bcrypt Hashing
+
+To prevent bcrypt operations from blocking the main event loop, PayFlow uses Node.js Worker Threads for password hashing.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Main Thread (Event Loop)                     │
+│                                                                  │
+│   Request ──▶ Auth Controller ──▶ Bcrypt Utility ──────────┐   │
+│                                                              │   │
+│   Response ◀── Promise Resolution ◀──────────────────────┐ │   │
+└──────────────────────────────────────────────────────────┼─┼───┘
+                                                            │ │
+                                                            │ │
+┌───────────────────────────────────────────────────────────┼─┼───┐
+│                     Worker Thread Pool                    │ │   │
+│                                                           │ │   │
+│   ┌──────────────────────┐                               │ │   │
+│   │  bcryptWorker.ts     │◀──────────────────────────────┘ │   │
+│   │                      │                                  │   │
+│   │  - hash(password)    │                                  │   │
+│   │  - compare(pwd,hash) │──────────────────────────────────┘   │
+│   └──────────────────────┘                                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Details
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Bcrypt Utility | `src/utils/bcrypt.ts` | Main thread API (hashPassword, comparePassword) |
+| Bcrypt Worker | `src/utils/bcryptWorker.ts` | Worker thread that performs actual hashing |
+
+### Benefits
+
+1. **Non-Blocking**: Main event loop remains responsive during hashing
+2. **Better Throughput**: Multiple hash operations can run in parallel
+3. **Configurable Rounds**: bcrypt rounds configurable via `BCRYPT_ROUNDS` env var
+4. **Fallback**: Uses synchronous bcrypt in development for simplicity
+
+### Configuration
+
+```bash
+# Environment Variables
+BCRYPT_ROUNDS=10          # Number of bcrypt rounds (default: 10)
+USE_BCRYPT_WORKER=true    # Enable worker threads (default: true in production)
+```
+
+## Clustering
+
+PayFlow supports multi-process clustering for optimal CPU utilization.
+
+### Cluster Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Primary Process                           │
+│                                                                  │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │                  cluster.ts (Primary)                    │  │
+│   │                                                          │  │
+│   │  - Forks worker processes                                │  │
+│   │  - Monitors worker health                                │  │
+│   │  - Respawns crashed workers                              │  │
+│   └──────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│              ┌───────────────┼───────────────┐                  │
+│              │               │               │                   │
+│              ▼               ▼               ▼                   │
+│   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│   │  Worker 1    │ │  Worker 2    │ │  Worker N    │           │
+│   │  (Express)   │ │  (Express)   │ │  (Express)   │           │
+│   └──────────────┘ └──────────────┘ └──────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    Load Balanced Requests
+```
+
+### Configuration
+
+```bash
+# Environment Variables
+CLUSTER_WORKERS=4         # Number of workers (default: CPU cores)
+```
+
+### Usage
+
+```bash
+# Development
+npm run dev:cluster       # Start clustered dev server
+
+# Production
+npm run start:cluster     # Start clustered production server
+```
+
+### Production Recommendations
+
+| Setting | Development | Production |
+|---------|-------------|------------|
+| Workers | 2 | 4-8 (based on CPU cores) |
+| Bcrypt Rounds | 10 | 12 |
+| Worker Threads | Disabled | Enabled |
+
 ## Observability Stack
 
 ### Metrics (Prometheus)
@@ -390,7 +496,8 @@ Load tests are integrated with GitHub Actions:
 ```
 src/
 ├── app.ts                 # Express app setup
-├── server.ts              # Server entry point
+├── server.ts              # Server entry point (single process)
+├── cluster.ts             # Cluster entry point (multi-process)
 ├── config/                # Configuration
 │   ├── index.ts          # Environment config
 │   ├── database.ts       # MongoDB connection
@@ -410,9 +517,16 @@ src/
 ├── middlewares/           # Express middlewares
 ├── events/                # Event bus (Redis pub/sub)
 ├── queues/                # BullMQ job queues
+├── utils/                 # Utilities
+│   ├── bcrypt.ts         # Worker-based bcrypt API
+│   └── bcryptWorker.ts   # Bcrypt worker thread
 ├── observability/         # Logs, metrics, tracing
 ├── docs/                  # OpenAPI specification
 └── routes/                # Route definitions
+
+scripts/
+├── test-api.sh           # cURL-based API tests (29 endpoints)
+└── run-full-tests.sh     # Orchestrated test runner
 
 load-testing/              # k6 Load Testing Suite
 ├── config/                # Environment configurations
@@ -432,16 +546,17 @@ load-testing/              # k6 Load Testing Suite
 
 | Category | Technology |
 |----------|------------|
-| Runtime | Node.js 20 |
+| Runtime | Node.js 20 (Clustered) |
 | Framework | Express.js 5 |
 | Language | TypeScript 5 |
 | Database | MongoDB 7 |
 | Cache/Queue | Redis 7 |
 | Job Queue | BullMQ |
-| Auth | JWT (jsonwebtoken) |
+| Auth | JWT + Worker Bcrypt |
 | Validation | express-validator |
 | Logging | Pino |
 | Metrics | prom-client |
 | Tracing | OpenTelemetry |
 | API Docs | Scalar |
 | Load Testing | k6 |
+| Concurrency | Worker Threads, Cluster |
