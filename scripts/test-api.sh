@@ -116,25 +116,24 @@ make_request() {
   local expected_status=${5:-200}
 
   local url="${API_URL}${endpoint}"
-  local curl_opts="-s -w '\n%{http_code}'"
 
-  # Build curl command
-  local cmd="curl $curl_opts -X $method"
-  cmd="$cmd -H 'Content-Type: application/json'"
+  # Build curl arguments using array (safer than eval)
+  local -a curl_args=(-s -w '\n%{http_code}' -X "$method")
+  curl_args+=(-H 'Content-Type: application/json')
 
   if [ -n "$auth" ] && [ "$auth" != "none" ]; then
-    cmd="$cmd -H 'Authorization: Bearer $auth'"
+    curl_args+=(-H "Authorization: Bearer $auth")
   fi
 
   if [ -n "$data" ] && [ "$data" != "none" ]; then
-    cmd="$cmd -d '$data'"
+    curl_args+=(-d "$data")
   fi
 
-  cmd="$cmd '$url'"
+  curl_args+=("$url")
 
   # Execute and capture response
   local response
-  response=$(eval $cmd 2>&1)
+  response=$(curl "${curl_args[@]}" 2>&1)
 
   # Extract status code (last line) and body (everything else)
   local status_code
@@ -195,7 +194,11 @@ extract_nested_value() {
     echo "$json" | jq -r ".$path // empty" 2>/dev/null
   else
     # Fallback for nested paths without jq
-    echo "$json" | grep -o "\"accessToken\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/.*"\([^"]*\)"$/\1/'
+    # Extract the last key from the path (e.g., "data.tokens.accessToken" -> "accessToken")
+    local key
+    key=$(echo "$path" | awk -F'.' '{print $NF}')
+    # Search for the key in the JSON and extract its value
+    echo "$json" | grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/.*"\([^"]*\)"$/\1/'
   fi
 }
 

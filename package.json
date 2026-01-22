@@ -59,11 +59,11 @@
     "load-test": "ts-node tests/load/transaction.load.ts",
     "chaos-test": "jest --runInBand tests/chaos",
 
-    "k6:local": "cd load-testing && k6 run -e ENV=local tests/smoke/smoke.test.js && k6 run -e ENV=local tests/load/api.test.js && k6 run -e ENV=local tests/stress/stress.test.js",
-    "k6:docker": "cd load-testing && k6 run -e ENV=docker-local tests/smoke/smoke.test.js && k6 run -e ENV=docker-local tests/load/api.test.js && k6 run -e ENV=docker-local tests/stress/stress.test.js",
-    "k6:vps": "cd load-testing && k6 run -e ENV=vps tests/smoke/smoke.test.js && k6 run -e ENV=vps tests/load/api.test.js && k6 run -e ENV=vps tests/stress/stress.test.js",
-    "k6:staging": "cd load-testing && k6 run -e ENV=staging tests/smoke/smoke.test.js && k6 run -e ENV=staging tests/load/api.test.js && k6 run -e ENV=staging tests/stress/stress.test.js",
-    "k6:production": "cd load-testing && k6 run -e ENV=production tests/smoke/smoke.test.js && k6 run -e ENV=production tests/load/api.test.js && k6 run -e ENV=production tests/stress/stress.test.js",
+    "k6:local": "cd load-testing && npm run test:full:local",
+    "k6:docker": "cd load-testing && npm run test:full:docker",
+    "k6:vps": "cd load-testing && npm run test:full:vps",
+    "k6:staging": "cd load-testing && npm run test:full:staging",
+    "k6:production": "cd load-testing && npm run test:full:production",
 
     "infra:local:up": "docker-compose -f docker/docker-compose.test.yml up -d mongodb-test redis-test && echo 'Waiting for services...' && sleep 5",
     "infra:local:down": "docker-compose -f docker/docker-compose.test.yml down",
