@@ -17,6 +17,7 @@ A production-grade payment backend built with Express.js and the Saga pattern. D
 - **Idempotency** - Duplicate request prevention
 - **Webhook System** - Event notifications with retry logic
 - **Observability** - Structured logging, Prometheus metrics, OpenTelemetry tracing
+- **Environment Configuration** - Auto-switching settings based on NODE_ENV
 - **API Documentation** - Interactive Scalar API reference
 
 ## Quick Start
@@ -168,6 +169,8 @@ src/
 ├── server.ts           # Entry point (single process)
 ├── cluster.ts          # Cluster entry point (multi-process)
 ├── config/             # Configuration
+│   ├── environments.ts # Environment-specific settings
+│   └── index.ts        # Main config exports
 ├── auth/               # Authentication module
 ├── services/           # Business services
 │   ├── wallet/         # Wallet operations
@@ -206,22 +209,44 @@ load-testing/           # k6 Load Testing Suite
 └── .github/workflows/  # CI/CD integration
 ```
 
-## Environment Variables
+## Environment Configuration
+
+The app automatically adjusts settings based on `NODE_ENV`:
+
+| Setting | Development | Test | Production |
+|---------|-------------|------|------------|
+| Bcrypt Rounds | 10 | 4 | 12 |
+| Rate Limit | 1000 req/15min | 10000 | 100 |
+| Log Level | debug | error | info |
+| JWT Access Token | 1h | 1h | 15m |
+
+```bash
+# Setup
+cp .env.example .env    # Copy template
+# Edit .env with your values
+
+# Run different environments
+NODE_ENV=development npm run dev
+NODE_ENV=test npm test
+NODE_ENV=production npm start
+```
+
+### Key Environment Variables
 
 ```env
-NODE_ENV=development
+NODE_ENV=development          # development | test | production
 PORT=3000
 
-# MongoDB
+# Database
 MONGODB_URI=mongodb://localhost:27017/payflow
-
-# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# JWT
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=1h
+# Authentication
+JWT_SECRET=your-secret-key    # Min 32 chars in production
+BCRYPT_ROUNDS=10              # 4 (test), 10 (dev), 12 (prod)
+
+# See .env.example for complete reference
 ```
 
 ## Documentation

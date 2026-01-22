@@ -376,6 +376,95 @@ npm run start:cluster     # Start clustered production server
 | Bcrypt Rounds | 10 | 12 |
 | Worker Threads | Disabled | Enabled |
 
+## Environment Configuration Architecture
+
+PayFlow uses a centralized configuration system that automatically adjusts settings based on the runtime environment.
+
+### Configuration Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Application Startup                           │
+│                                                                  │
+│   .env file ──▶ dotenv.config() ──▶ process.env                │
+│                                                                  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               src/config/environments.ts                         │
+│                                                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  Environment Detection                                   │  │
+│   │                                                          │  │
+│   │  NODE_ENV ──▶ isProduction / isDevelopment / isTest     │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│   ┌──────────────────────────┼──────────────────────────┐      │
+│   │                          │                          │       │
+│   ▼                          ▼                          ▼       │
+│ ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐  │
+│ │ MONGODB_URI  │  │ BCRYPT_ROUNDS    │  │ RATE_LIMIT_CONFIG│  │
+│ │ REDIS_CONFIG │  │ JWT_CONFIG       │  │ LOG_CONFIG       │  │
+│ │ API_CONFIG   │  │ WEBHOOK_CONFIG   │  │ SECURITY_CONFIG  │  │
+│ └──────────────┘  └──────────────────┘  └──────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   src/config/index.ts                            │
+│                                                                  │
+│   Exports unified `config` object + individual configs           │
+│   Re-exports environment flags for easy access                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `.env.example` | Template with all variables (commit this) |
+| `.env` | Actual values (gitignored, never commit) |
+| `src/config/environments.ts` | Environment-specific defaults |
+| `src/config/index.ts` | Main config exports |
+
+### Auto-Adjusted Settings by Environment
+
+| Setting | Development | Test | Production |
+|---------|-------------|------|------------|
+| `BCRYPT_ROUNDS` | 10 | 4 | 12 |
+| `RATE_LIMIT_MAX` | 1000 | 10000 | 100 |
+| `LOG_LEVEL` | debug | error | info |
+| `JWT_ACCESS_EXPIRES` | 1h | 1h | 15m |
+| `WEBHOOK_TIMEOUT` | 5s | 5s | 10s |
+| `MONGODB_POOL_SIZE` | 10 | 10 | 50 |
+
+### Usage Patterns
+
+```typescript
+// Import environment flags
+import { isProduction, isDevelopment, isTest } from './config';
+
+// Conditional logic
+if (isProduction) {
+  validateProductionEnv(); // Throws if missing required vars
+}
+
+// Import specific configs
+import { BCRYPT_ROUNDS, JWT_CONFIG, RATE_LIMIT_CONFIG } from './config/environments';
+
+// Or use unified config object
+import { config } from './config';
+console.log(config.jwt.accessTokenExpiresIn);
+```
+
+### Production Validation
+
+On startup in production, `validateProductionEnv()` ensures:
+- `JWT_SECRET` is set and 32+ characters
+- `MONGODB_URI` is configured
+- `REDIS_HOST` is configured
+
 ## Observability Stack
 
 ### Metrics (Prometheus)
@@ -499,7 +588,8 @@ src/
 ├── server.ts              # Server entry point (single process)
 ├── cluster.ts             # Cluster entry point (multi-process)
 ├── config/                # Configuration
-│   ├── index.ts          # Environment config
+│   ├── index.ts          # Main config exports
+│   ├── environments.ts   # Environment-specific settings
 │   ├── database.ts       # MongoDB connection
 │   └── redis.ts          # Redis connection
 ├── auth/                  # Authentication module
