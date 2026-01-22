@@ -146,7 +146,6 @@ export const JWT_SECRET = isProduction
  */
 export const JWT_CONFIG = {
   secret: JWT_SECRET,
-  expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   accessTokenExpiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN || (isProduction ? '15m' : '1h'),
   refreshTokenExpiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN || '7d',
 };
@@ -175,6 +174,8 @@ export const RATE_LIMIT_CONFIG = {
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
   maxRequests: isProduction
     ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
+    : isTest
+    ? 10000 // Very lenient for tests
     : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10), // More lenient in dev
   skipFailedRequests: !isProduction,
 };
@@ -312,6 +313,8 @@ export const validateProductionEnv = (): void => {
     'JWT_SECRET',
     'MONGODB_URI',
     'REDIS_HOST',
+    'REDIS_PASSWORD',
+    'CORS_ORIGINS',
   ];
 
   const missing = required.filter((key) => !process.env[key]);

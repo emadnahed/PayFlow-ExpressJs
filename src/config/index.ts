@@ -40,6 +40,11 @@ export {
 // Re-export environment-specific configs for direct access
 export * from './environments';
 
+// Validate production environment variables on startup
+if (isProduction) {
+  validateProductionEnv();
+}
+
 /**
  * Main application configuration object
  *
