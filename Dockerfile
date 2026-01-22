@@ -76,5 +76,6 @@ ENV UV_THREADPOOL_SIZE=8
 # --optimize-for-size: Prefer memory efficiency over speed
 # --gc-interval=100: More frequent GC for lower memory footprint
 
-# Start the application with optimized flags
-CMD ["node", "--max-old-space-size=256", "--optimize-for-size", "--gc-interval=100", "dist/server.js"]
+# Start the application with clustering for multi-core utilization
+# Use cluster.js for production (spawns workers based on CLUSTER_WORKERS env)
+CMD ["node", "--max-old-space-size=256", "--optimize-for-size", "--gc-interval=100", "dist/cluster.js"]

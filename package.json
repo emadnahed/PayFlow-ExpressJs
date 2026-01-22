@@ -5,8 +5,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",
+    "dev:cluster": "nodemon --exec ts-node src/cluster.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:cluster": "node dist/cluster.js",
 
     "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "jest --watch --runInBand",
