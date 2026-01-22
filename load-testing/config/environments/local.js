@@ -3,7 +3,7 @@
  * Used for development and local testing
  */
 export const config = {
-  baseUrl: __ENV.API_URL || 'http://localhost:3000',
+  baseUrl: __ENV.API_URL || 'http://localhost:3001',
 
   // Test user credentials
   testUser: {
