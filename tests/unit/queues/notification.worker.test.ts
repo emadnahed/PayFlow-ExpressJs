@@ -285,13 +285,11 @@ describe('Notification Worker', () => {
     it('should log when worker starts', () => {
       mockLogger.info.mockClear();
 
-      // Force a fresh start
-      stopNotificationWorker();
-      jest.clearAllMocks();
+      // Start the worker, which should trigger a log message
+      startNotificationWorker();
 
-      // BullMQ Worker mock will trigger logger.info via the actual startNotificationWorker
-      // We can verify the pattern matches expected behavior
-      expect(typeof startNotificationWorker).toBe('function');
+      // Verify the logger was called with the expected message
+      expect(mockLogger.info).toHaveBeenCalledWith('Notification worker started');
     });
 
     it('should log notification details during processing', async () => {
