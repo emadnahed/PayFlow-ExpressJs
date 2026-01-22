@@ -1,4 +1,4 @@
-import { parentPort, workerData } from 'worker_threads';
+import { parentPort } from 'worker_threads';
 import bcrypt from 'bcryptjs';
 
 interface WorkerData {
@@ -7,17 +7,15 @@ interface WorkerData {
   saltOrHash: string | number;
 }
 
-const { type, password, saltOrHash } = workerData as WorkerData;
-
-async function run(): Promise<void> {
+async function processTask(data: WorkerData): Promise<void> {
   try {
     let result: string | boolean;
 
-    if (type === 'hash') {
-      const salt = await bcrypt.genSalt(saltOrHash as number);
-      result = await bcrypt.hash(password, salt);
+    if (data.type === 'hash') {
+      const salt = await bcrypt.genSalt(data.saltOrHash as number);
+      result = await bcrypt.hash(data.password, salt);
     } else {
-      result = await bcrypt.compare(password, saltOrHash as string);
+      result = await bcrypt.compare(data.password, data.saltOrHash as string);
     }
 
     parentPort?.postMessage({ success: true, result });
@@ -26,4 +24,7 @@ async function run(): Promise<void> {
   }
 }
 
-run();
+// Listen for incoming tasks from the pool manager
+parentPort?.on('message', (data: WorkerData) => {
+  processTask(data);
+});

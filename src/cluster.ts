@@ -2,7 +2,8 @@ import cluster from 'cluster';
 import os from 'os';
 import { logger } from './observability';
 
-const numCPUs = parseInt(process.env.CLUSTER_WORKERS || String(os.cpus().length), 10);
+const numCPUsFromEnv = parseInt(process.env.CLUSTER_WORKERS || '', 10);
+const numCPUs = numCPUsFromEnv > 0 ? numCPUsFromEnv : os.cpus().length;
 
 if (cluster.isPrimary) {
   logger.info({ numCPUs, pid: process.pid }, 'Primary process started');

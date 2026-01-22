@@ -25,7 +25,7 @@ export const config = {
   bcrypt: {
     // Minimum 10 rounds for security (each round doubles the time)
     // 10 rounds = ~160ms, 12 = ~640ms
-    rounds: parseInt(process.env.BCRYPT_ROUNDS || '10', 10),
+    rounds: parseInt(process.env.BCRYPT_ROUNDS || '', 10) || 10,
   },
 
   api: {
