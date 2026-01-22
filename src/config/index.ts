@@ -1,45 +1,103 @@
 import dotenv from 'dotenv';
 
+// Load environment variables first
 dotenv.config();
 
+// Import environment-specific configurations
+import {
+  NODE_ENV,
+  isProduction,
+  isDevelopment,
+  isTest,
+  isLocalDev,
+  MONGODB_URI,
+  MONGODB_CONFIG,
+  REDIS_HOST,
+  REDIS_PORT,
+  REDIS_PASSWORD,
+  JWT_CONFIG,
+  BCRYPT_ROUNDS,
+  RATE_LIMIT_CONFIG,
+  WEBHOOK_CONFIG,
+  API_CONFIG,
+  LOG_CONFIG,
+  OTEL_CONFIG,
+  SECURITY_CONFIG,
+  validateProductionEnv,
+  getEnvironmentInfo,
+} from './environments';
+
+// Re-export environment utilities
+export {
+  isProduction,
+  isDevelopment,
+  isTest,
+  isLocalDev,
+  validateProductionEnv,
+  getEnvironmentInfo,
+};
+
+// Re-export environment-specific configs for direct access
+export * from './environments';
+
+/**
+ * Main application configuration object
+ *
+ * This consolidates all environment-specific settings.
+ * Import this for general app configuration needs.
+ *
+ * For environment-specific values, you can also import directly from './environments'
+ */
 export const config = {
-  nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
+  // Environment
+  nodeEnv: NODE_ENV,
+  isProduction,
+  isDevelopment,
+  isTest,
+  isLocalDev,
 
+  // Server
+  port: API_CONFIG.port,
+
+  // MongoDB
   mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/payflow',
+    uri: MONGODB_URI,
+    ...MONGODB_CONFIG,
   },
 
+  // Redis
   redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    host: REDIS_HOST,
+    port: REDIS_PORT,
+    password: REDIS_PASSWORD,
   },
 
-  jwt: {
-    secret: process.env.JWT_SECRET || 'default-secret-change-me',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    accessTokenExpiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN || '15m',
-    refreshTokenExpiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN || '7d',
-  },
+  // JWT Authentication
+  jwt: JWT_CONFIG,
 
+  // Bcrypt
   bcrypt: {
-    // Minimum 10 rounds for security (each round doubles the time)
-    // 10 rounds = ~160ms, 12 = ~640ms
-    rounds: parseInt(process.env.BCRYPT_ROUNDS || '', 10) || 10,
+    rounds: BCRYPT_ROUNDS,
   },
 
+  // API
   api: {
-    bodyLimit: process.env.API_BODY_LIMIT || '10kb',
+    bodyLimit: API_CONFIG.bodyLimit,
+    corsOrigins: API_CONFIG.corsOrigins,
   },
 
-  webhook: {
-    timeoutMs: parseInt(process.env.WEBHOOK_TIMEOUT_MS || '5000', 10),
-    retryAttempts: parseInt(process.env.WEBHOOK_RETRY_ATTEMPTS || '5', 10),
-    maxFailureCount: parseInt(process.env.WEBHOOK_MAX_FAILURE_COUNT || '10', 10),
-    maxPageLimit: parseInt(process.env.WEBHOOK_MAX_PAGE_LIMIT || '100', 10),
-  },
+  // Rate Limiting
+  rateLimit: RATE_LIMIT_CONFIG,
 
-  isProduction: process.env.NODE_ENV === 'production',
-  isTest: process.env.NODE_ENV === 'test',
-  isDevelopment: process.env.NODE_ENV === 'development',
+  // Webhooks
+  webhook: WEBHOOK_CONFIG,
+
+  // Logging
+  logging: LOG_CONFIG,
+
+  // Observability
+  otel: OTEL_CONFIG,
+
+  // Security
+  security: SECURITY_CONFIG,
 };

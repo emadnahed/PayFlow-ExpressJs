@@ -5,9 +5,13 @@ claude/
 # Build output
 dist/
 
-# Environment files
+# Environment files - NEVER commit secrets
 .env
 .env.local
+.env.development
+.env.test
+.env.production
+.env.staging
 .env.*.local
 
 # IDE
