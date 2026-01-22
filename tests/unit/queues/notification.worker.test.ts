@@ -23,6 +23,17 @@ jest.mock('../../../src/queues/queue.config', () => ({
   WORKER_CONCURRENCY: { NOTIFICATIONS: 10 },
 }));
 
+// Mock logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  warn: jest.fn(),
+};
+jest.mock('../../../src/observability', () => ({
+  logger: mockLogger,
+}));
+
 describe('Notification Worker', () => {
   // Import fresh module for each test
   let startNotificationWorker: typeof import('../../../src/queues/workers/notification.worker').startNotificationWorker;
@@ -105,7 +116,7 @@ describe('Notification Worker', () => {
 
   describe('worker event handlers', () => {
     it('should log on job completion', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.info.mockClear();
 
       startNotificationWorker();
 
@@ -118,15 +129,14 @@ describe('Notification Worker', () => {
       const completedHandler = completedCall[1];
       completedHandler({ id: 'job-123' }, { sent: true, channel: 'push' });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Job job-123 completed: sent=true, channel=push')
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job-123', sent: true, channel: 'push' }),
+        'Notification job completed'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should log on job failure', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
 
       startNotificationWorker();
 
@@ -139,11 +149,10 @@ describe('Notification Worker', () => {
       const failedHandler = failedCall[1];
       failedHandler({ id: 'job-456' }, new Error('Notification delivery failed'));
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Job job-456 failed')
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job-456' }),
+        'Notification job failed'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle null job in failed handler', () => {
@@ -159,7 +168,7 @@ describe('Notification Worker', () => {
     });
 
     it('should log worker errors', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
 
       startNotificationWorker();
 
@@ -168,14 +177,13 @@ describe('Notification Worker', () => {
       );
       const errorHandler = errorCall[1];
 
-      errorHandler(new Error('Worker crashed'));
+      const testError = new Error('Worker crashed');
+      errorHandler(testError);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[Notification Worker] Worker error:',
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ err: testError }),
+        'Notification worker error'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -275,21 +283,19 @@ describe('Notification Worker', () => {
 
   describe('logging behavior', () => {
     it('should log when worker starts', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.info.mockClear();
 
       // Force a fresh start
       stopNotificationWorker();
       jest.clearAllMocks();
 
-      // BullMQ Worker mock will trigger console.log via the actual startNotificationWorker
+      // BullMQ Worker mock will trigger logger.info via the actual startNotificationWorker
       // We can verify the pattern matches expected behavior
       expect(typeof startNotificationWorker).toBe('function');
-
-      consoleSpy.mockRestore();
     });
 
     it('should log notification details during processing', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.info.mockClear();
       const WorkerMock = jest.requireMock('bullmq').Worker;
 
       startNotificationWorker();
@@ -308,11 +314,10 @@ describe('Notification Worker', () => {
 
       await processNotificationJob(mockJob);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Processing notification for user user_123')
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user_123', type: 'TRANSACTION_COMPLETED' }),
+        'Processing notification'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 });
