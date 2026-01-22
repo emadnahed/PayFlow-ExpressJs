@@ -6,14 +6,15 @@
 # 1. Unit tests (no infrastructure needed)
 npm run test:unit
 
-# 2. E2E tests with Docker
-npm run docker:test:all      # Start MongoDB + Redis + API
-npm run test:e2e:docker      # Run 195 E2E tests
-npm run docker:test:down     # Cleanup
+# 2. Full test suite with orchestration (recommended)
+npm run test:run:local       # Starts infra, API, runs all tests, cleans up
+npm run test:run:docker      # Same but with Docker infrastructure
 
-# 3. cURL API tests (requires running API)
-npm run docker:test:all      # Start infrastructure
-npm run test:api             # Run 80 cURL tests
+# 3. Manual step-by-step
+npm run infra:local:up       # Start MongoDB + Redis
+npm run dev &                # Start API server
+npm run test:full:local      # Run Unit + Integration + E2E + Curl + K6
+npm run infra:local:down     # Cleanup
 ```
 
 ---
@@ -54,11 +55,44 @@ PayFlow uses a tiered testing strategy to ensure code quality while maintaining 
 
 ## All Test Commands
 
+### Infrastructure Management
+
+| Command | Description |
+|---------|-------------|
+| `npm run infra:local:up` | Start test MongoDB (27018) + Redis (6380) |
+| `npm run infra:local:down` | Stop test infrastructure |
+| `npm run infra:local:status` | Check test infrastructure status |
+| `npm run infra:docker:up` | Start full Docker stack (API + DB + Redis) |
+| `npm run infra:docker:down` | Stop Docker stack |
+| `npm run infra:docker:status` | Check Docker stack status |
+
+### Orchestrated Full Test Suite (Recommended)
+
+These commands handle infrastructure startup, run all tests, and cleanup automatically:
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:run:local` | Full suite: Unit + Integration + E2E + Curl + K6 (local) |
+| `npm run test:run:docker` | Full suite with Docker infrastructure |
+| `npm run test:run:vps` | Unit + Curl + K6 against VPS |
+| `npm run test:run:staging` | Unit + Curl + K6 against staging |
+| `npm run test:run:production` | Unit + Curl + K6 against production |
+
+### Full Test Suite (Manual Infrastructure)
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:full:local` | Unit + Integration + E2E + Curl + K6 (local) |
+| `npm run test:full:docker` | Unit + Integration + E2E + Curl + K6 (docker) |
+| `npm run test:full:vps` | Unit + Curl + K6 (VPS) |
+| `npm run test:full:staging` | Unit + Curl + K6 (staging) |
+| `npm run test:full:production` | Unit + Curl + K6 (production) |
+
 ### Unit Tests (No Infrastructure)
 
 | Command | Description |
 |---------|-------------|
-| `npm run test:unit` | Run 462 unit tests (fast, isolated) |
+| `npm run test:unit` | Run 428+ unit tests (fast, isolated) |
 
 ### Jest Tests (Require MongoDB + Redis)
 
@@ -69,9 +103,11 @@ PayFlow uses a tiered testing strategy to ensure code quality while maintaining 
 | `npm run test:verbose` | Verbose output with details |
 | `npm run test:coverage` | Generate coverage report |
 | `npm run test:ci` | CI pipeline (with coverage + force exit) |
-| `npm run test:integration` | Integration tests only |
+| `npm run test:integration` | Integration tests only (214+ tests) |
 | `npm run test:e2e` | E2E tests (local Redis 6379) |
 | `npm run test:e2e:docker` | E2E tests (Docker Redis 6380) |
+| `npm run test:jest:local` | Unit + Integration + E2E combined |
+| `npm run test:jest:docker` | Unit + Integration + E2E (Docker ports) |
 | `npm run test:chaos` | Chaos/failure scenario tests |
 | `npm run test:load` | Load/performance tests |
 
@@ -79,10 +115,23 @@ PayFlow uses a tiered testing strategy to ensure code quality while maintaining 
 
 | Command | Description |
 |---------|-------------|
-| `npm run test:api` | Run 80 cURL tests (Docker port 3001) |
-| `npm run test:api:local` | cURL tests against local dev (port 3000) |
-| `npm run test:api:docker` | cURL tests against Docker (port 3001) |
-| `npm run test:api:verbose` | cURL tests with request body output |
+| `npm run test:api` | Run curl tests (default environment) |
+| `npm run test:api:local` | Curl tests against localhost:3000 |
+| `npm run test:api:docker` | Curl tests against Docker (localhost:3000) |
+| `npm run test:api:vps` | Curl tests against VPS (set VPS_API_URL) |
+| `npm run test:api:staging` | Curl tests against staging (set STAGING_API_URL) |
+| `npm run test:api:production` | Curl tests against production (set PRODUCTION_API_URL) |
+| `npm run test:api:verbose` | Curl tests with response body output |
+
+### K6 Load Tests
+
+| Command | Description |
+|---------|-------------|
+| `npm run k6:local` | K6 smoke + load + stress (local) |
+| `npm run k6:docker` | K6 smoke + load + stress (docker-local) |
+| `npm run k6:vps` | K6 smoke + load + stress (VPS) |
+| `npm run k6:staging` | K6 smoke + load + stress (staging) |
+| `npm run k6:production` | K6 smoke + load + stress (production) |
 
 ### Docker Commands
 
@@ -97,42 +146,80 @@ PayFlow uses a tiered testing strategy to ensure code quality while maintaining 
 
 ## Common Workflows
 
+### Run Full Test Suite (Easiest - Recommended)
+
+```bash
+# Orchestrated: handles infrastructure, API, tests, and cleanup
+npm run test:run:local       # For local development
+npm run test:run:docker      # For Docker-based testing
+```
+
 ### Run Unit Tests Only (No Setup Required)
 
 ```bash
 npm run test:unit
 ```
 
-### Run E2E Tests with Docker
+### Run Jest Tests (Unit + Integration + E2E)
 
 ```bash
-# Start test infrastructure
-npm run docker:test:all
+# Start infrastructure first
+npm run infra:local:up
 
-# Run E2E tests
-npm run test:e2e:docker
-
-# View logs if needed
-npm run docker:test:logs
+# Run all Jest tests
+npm run test:jest:local
 
 # Cleanup
-npm run docker:test:down
+npm run infra:local:down
 ```
 
 ### Run cURL API Tests
 
 ```bash
-# Start test infrastructure (includes API)
-npm run docker:test:all
+# Start infrastructure and API
+npm run infra:local:up
+npm run dev &                 # Start API in background
 
-# Run cURL tests
-npm run test:api
+# Run curl tests
+npm run test:api:local
 
 # Or with verbose output
-npm run test:api:verbose
+VERBOSE=true npm run test:api:local
 
 # Cleanup
-npm run docker:test:down
+pkill -f "ts-node src/server"
+npm run infra:local:down
+```
+
+### Run K6 Load Tests
+
+```bash
+# Start infrastructure and API
+npm run infra:local:up
+npm run dev &
+
+# Run K6 tests
+npm run k6:local              # Runs smoke + load + stress tests
+
+# Or run from load-testing directory
+cd load-testing
+npm run test:full:local
+
+# Cleanup
+npm run infra:local:down
+```
+
+### Run Tests Against Remote Environments
+
+```bash
+# Against VPS (set API URL)
+VPS_API_URL=https://api.yourvps.com npm run test:run:vps
+
+# Against staging
+STAGING_API_URL=https://staging.example.com npm run test:run:staging
+
+# Against production (conservative)
+PRODUCTION_API_URL=https://api.example.com npm run test:run:production
 ```
 
 ### Run All Tests for CI
@@ -147,7 +234,7 @@ npm run docker:test:down
 
 ```bash
 # Start infrastructure
-npm run docker:test
+npm run infra:local:up
 
 # Run tests in watch mode
 npm run test:watch
@@ -639,9 +726,11 @@ Coverage report is generated in `coverage/` directory:
 
 | Category | Tests |
 |----------|-------|
-| Unit Tests | 462 |
-| E2E Tests | 195 |
-| Total | 657+ |
+| Unit Tests | 428 |
+| Integration Tests | 214 |
+| E2E Tests | 212 |
+| cURL API Tests | 29 |
+| Total | 883+ |
 
 ---
 
@@ -726,70 +815,95 @@ const response = await request(app)
 
 ## Manual API Testing (cURL)
 
-A comprehensive cURL-based test script is available for manual API testing:
+A comprehensive cURL-based test script (`scripts/test-api.sh`) tests all API endpoints:
 
 ```bash
-# Run against Docker test environment (port 3001)
-./scripts/test-api.sh
+# Run against different environments
+npm run test:api:local        # localhost:3000
+npm run test:api:docker       # Docker (localhost:3000)
+npm run test:api:vps          # VPS (set VPS_API_URL)
+npm run test:api:staging      # Staging (set STAGING_API_URL)
+npm run test:api:production   # Production (set PRODUCTION_API_URL)
 
-# Run against local development (port 3000)
-API_URL=http://localhost:3000 ./scripts/test-api.sh
+# Enable verbose mode (shows response bodies)
+VERBOSE=true npm run test:api:local
 
-# Enable verbose mode (shows request bodies)
-VERBOSE=true ./scripts/test-api.sh
+# Direct script usage
+ENV=local API_URL=http://localhost:3000 ./scripts/test-api.sh
+```
+
+### Environment Variables for Remote Testing
+
+```bash
+# VPS
+VPS_API_URL=https://api.yourvps.com npm run test:api:vps
+
+# Staging
+STAGING_API_URL=https://staging.example.com npm run test:api:staging
+
+# Production
+PRODUCTION_API_URL=https://api.example.com npm run test:api:production
 ```
 
 ### Test Script Features
 
 | Feature | Description |
 |---------|-------------|
-| **80 Tests** | Comprehensive coverage of all endpoints |
+| **29 Tests** | Comprehensive coverage of all API endpoints |
+| **Multi-Environment** | Supports local, docker, vps, staging, production |
+| **Auto-Authentication** | Registers user, stores token, reuses for all tests |
 | **CRUD Flows** | Create → Read → Update → Delete patterns |
-| **Pagination** | Tests limit, offset, and filters |
-| **Error Cases** | Validates error responses (401, 403, 404, 409) |
-| **jq Beautification** | JSON responses formatted for readability |
+| **Error Cases** | Validates error responses (401, 404, 400) |
+| **jq Support** | Uses jq for JSON parsing if available |
 | **Color Output** | Pass/fail indicators with ANSI colors |
 
 ### Endpoints Tested
 
-- **Health**: `/health`, `/health/live`, `/health/ready`, `/metrics`
-- **Auth**: Register, login, refresh, profile
-- **Wallet**: Balance, deposit, history with pagination
-- **Transaction**: Create, list, filter, pagination
-- **Webhook**: Full CRUD, delivery logs, filters
-- **Ledger**: Simulation config, enable/disable, reset
+- **Root & Docs**: `/`, `/api-docs`, `/api-docs.json`
+- **Health**: `/health`, `/health/live`, `/health/ready`
+- **Metrics**: `/metrics`
+- **Auth**: Register, login, refresh, profile, unauthorized access
+- **Wallet**: Get wallet, deposit, history, balance by ID
+- **Transaction**: List, create (validation), get by ID
+- **Webhook**: Full CRUD, logs
+- **Ledger**: Simulation config, update, reset
 
 ### Sample Output
 
 ```
-╔═══════════════════════════════════════════════════════════╗
-║            PayFlow API Test Suite (cURL)                  ║
-╚═══════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════╗
+║           PayFlow API Integration Test Suite                  ║
+╚═══════════════════════════════════════════════════════════════╝
 
-  Base URL: http://localhost:3001
+Environment: local
+API URL:     http://localhost:3000
+Verbose:     false
+Test User:   apitest_1234567890@example.com
 
-════════════════════════════════════════════════════════════
-  HEALTH CHECK ENDPOINTS
-════════════════════════════════════════════════════════════
+► Testing: Checking API connectivity...
+  ✓ PASS: API is reachable
 
-▶ TEST: Health check
-  → GET /health
-  Response (HTTP 200):
-    {
-      "status": "healthy",
-      "services": { "database": { "connected": true }, ... }
-    }
-  ✓ PASS: Health endpoint returns status (HTTP 200)
+═══════════════════════════════════════════════════════════════
+  Health Check Endpoints
+═══════════════════════════════════════════════════════════════
+► Testing: GET /health
+  ✓ PASS: Health endpoint returns 200
+► Testing: GET /health/live
+  ✓ PASS: Liveness endpoint returns 200
 
-════════════════════════════════════════════════════════════
-  TEST SUMMARY
-════════════════════════════════════════════════════════════
+...
 
-  Total Tests:  80
-  Passed:       80
-  Failed:       0
+═══════════════════════════════════════════════════════════════
+  Test Summary
+═══════════════════════════════════════════════════════════════
 
-  All tests passed!
+  Passed:  29
+  Failed:  0
+  Skipped: 0
+
+  Pass Rate: 100%
+
+All tests passed!
 ```
 
 ---
@@ -811,20 +925,36 @@ sudo apt-get install k6
 choco install k6
 ```
 
-### Quick Start
+### Quick Start (From Root Directory)
+
+```bash
+# Full K6 suite (smoke + load + stress) for each environment
+npm run k6:local              # Against localhost:3000
+npm run k6:docker             # Against Docker (localhost:3000)
+npm run k6:vps                # Against VPS
+npm run k6:staging            # Against staging
+npm run k6:production         # Against production
+```
+
+### Quick Start (From load-testing Directory)
 
 ```bash
 cd load-testing
 
-# Test against local Docker containers
+# Full suite per environment
+npm run test:full:local       # smoke + load + stress (local)
+npm run test:full:docker      # smoke + load + stress (docker)
+npm run test:full:vps         # smoke + load + stress (VPS)
+npm run test:full:staging     # smoke + load + stress (staging)
+npm run test:full:production  # smoke + load + stress (production)
+
+# Individual tests
 npm run test:smoke:docker     # Quick health check (1 VU, 1 min)
 npm run test:load:docker      # Standard load test (10-100 VUs, 16 min)
 npm run test:stress:docker    # Find breaking points (up to 500 VUs)
 npm run test:soak:docker      # Long-running stability (30 VUs, 1+ hour)
 
-# Test against VPS
-npm run test:smoke:vps        # Quick health check
-npm run test:load:vps         # Standard load test
+# Test against VPS with custom URL
 k6 run -e ENV=vps -e API_URL=https://your-vps.com tests/smoke/smoke.test.js
 ```
 

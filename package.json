@@ -22,8 +22,11 @@
     "test:e2e:docker": "REDIS_PORT=6380 jest --runInBand tests/e2e",
 
     "test:api": "./scripts/test-api.sh",
-    "test:api:local": "API_URL=http://localhost:3000 ./scripts/test-api.sh",
-    "test:api:docker": "API_URL=http://localhost:3001 ./scripts/test-api.sh",
+    "test:api:local": "ENV=local API_URL=http://localhost:3000 ./scripts/test-api.sh",
+    "test:api:docker": "ENV=docker-local API_URL=http://localhost:3000 ./scripts/test-api.sh",
+    "test:api:vps": "ENV=vps ./scripts/test-api.sh",
+    "test:api:staging": "ENV=staging ./scripts/test-api.sh",
+    "test:api:production": "ENV=production ./scripts/test-api.sh",
     "test:api:verbose": "VERBOSE=true ./scripts/test-api.sh",
 
     "test:load": "ts-node tests/load/transaction.load.ts",
@@ -54,7 +57,35 @@
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'",
 
     "load-test": "ts-node tests/load/transaction.load.ts",
-    "chaos-test": "jest --runInBand tests/chaos"
+    "chaos-test": "jest --runInBand tests/chaos",
+
+    "k6:local": "cd load-testing && npm run test:full:local",
+    "k6:docker": "cd load-testing && npm run test:full:docker",
+    "k6:vps": "cd load-testing && npm run test:full:vps",
+    "k6:staging": "cd load-testing && npm run test:full:staging",
+    "k6:production": "cd load-testing && npm run test:full:production",
+
+    "infra:local:up": "docker-compose -f docker/docker-compose.test.yml up -d mongodb-test redis-test && echo 'Waiting for services...' && sleep 5",
+    "infra:local:down": "docker-compose -f docker/docker-compose.test.yml down",
+    "infra:local:status": "docker-compose -f docker/docker-compose.test.yml ps",
+    "infra:docker:up": "docker-compose -f docker/docker-compose.yml up -d",
+    "infra:docker:down": "docker-compose -f docker/docker-compose.yml down",
+    "infra:docker:status": "docker-compose -f docker/docker-compose.yml ps",
+
+    "test:full:local": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:api:local && npm run k6:local",
+    "test:full:docker": "npm run test:unit && REDIS_PORT=6380 npm run test:integration && npm run test:e2e:docker && npm run test:api:docker && npm run k6:docker",
+    "test:full:vps": "npm run test:unit && npm run test:api:vps && npm run k6:vps",
+    "test:full:staging": "npm run test:unit && npm run test:api:staging && npm run k6:staging",
+    "test:full:production": "npm run test:unit && npm run test:api:production && npm run k6:production",
+
+    "test:jest:local": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:jest:docker": "npm run test:unit && REDIS_PORT=6380 npm run test:integration && npm run test:e2e:docker",
+
+    "test:run:local": "./scripts/run-full-tests.sh local",
+    "test:run:docker": "./scripts/run-full-tests.sh docker",
+    "test:run:vps": "./scripts/run-full-tests.sh vps",
+    "test:run:staging": "./scripts/run-full-tests.sh staging",
+    "test:run:production": "./scripts/run-full-tests.sh production"
   },
   "keywords": [
     "payment",
