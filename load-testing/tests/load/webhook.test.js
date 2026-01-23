@@ -85,12 +85,19 @@ export function setup() {
     }
   }
 
-  // Add default test user
-  users.push({
-    email: config.testUser.email,
-    password: config.testUser.password,
-    webhooks: [],
-  });
+  // Register and add default test user
+  const testUser1Response = apiClient.register(
+    config.testUser.email,
+    config.testUser.password,
+    'Webhook Test User Default'
+  );
+  if (testUser1Response.status === 201 || testUser1Response.status === 200 || testUser1Response.status === 409) {
+    users.push({
+      email: config.testUser.email,
+      password: config.testUser.password,
+      webhooks: [],
+    });
+  }
 
   return { users };
 }

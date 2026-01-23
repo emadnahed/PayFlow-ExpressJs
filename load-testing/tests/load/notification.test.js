@@ -82,17 +82,31 @@ export function setup() {
     }
   }
 
-  // Add default test users
-  users.push({
-    email: config.testUser.email,
-    password: config.testUser.password,
-  });
+  // Register and add default test users
+  const testUser1Response = apiClient.register(
+    config.testUser.email,
+    config.testUser.password,
+    'Notification Test User 1'
+  );
+  if (testUser1Response.status === 201 || testUser1Response.status === 200 || testUser1Response.status === 409) {
+    users.push({
+      email: config.testUser.email,
+      password: config.testUser.password,
+    });
+  }
 
   if (config.testUser2) {
-    users.push({
-      email: config.testUser2.email,
-      password: config.testUser2.password,
-    });
+    const testUser2Response = apiClient.register(
+      config.testUser2.email,
+      config.testUser2.password,
+      'Notification Test User 2'
+    );
+    if (testUser2Response.status === 201 || testUser2Response.status === 200 || testUser2Response.status === 409) {
+      users.push({
+        email: config.testUser2.email,
+        password: config.testUser2.password,
+      });
+    }
   }
 
   return { users };

@@ -73,11 +73,34 @@ export function setup() {
     }
   }
 
-  // Add config test users
-  users.push({
-    email: config.testUser.email,
-    password: config.testUser.password,
-  });
+  // Register and add config test users
+  const testUser1Response = apiClient.register(
+    config.testUser.email,
+    config.testUser.password,
+    'Stress Test User 1'
+  );
+  if (testUser1Response.status === 201 || testUser1Response.status === 200 || testUser1Response.status === 409) {
+    users.push({
+      email: config.testUser.email,
+      password: config.testUser.password,
+    });
+    console.log(`Registered/verified test user: ${config.testUser.email}`);
+  }
+
+  if (config.testUser2) {
+    const testUser2Response = apiClient.register(
+      config.testUser2.email,
+      config.testUser2.password,
+      'Stress Test User 2'
+    );
+    if (testUser2Response.status === 201 || testUser2Response.status === 200 || testUser2Response.status === 409) {
+      users.push({
+        email: config.testUser2.email,
+        password: config.testUser2.password,
+      });
+      console.log(`Registered/verified test user: ${config.testUser2.email}`);
+    }
+  }
 
   console.log(`Created ${users.length} test users for stress testing`);
 

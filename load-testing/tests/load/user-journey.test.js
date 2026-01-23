@@ -82,11 +82,18 @@ export function setup() {
     }
   }
 
-  // Add config test users
-  existingUsers.push({
-    email: config.testUser.email,
-    password: config.testUser.password,
-  });
+  // Register and add config test user
+  const testUser1Response = apiClient.register(
+    config.testUser.email,
+    config.testUser.password,
+    'Journey Test User'
+  );
+  if (testUser1Response.status === 201 || testUser1Response.status === 200 || testUser1Response.status === 409) {
+    existingUsers.push({
+      email: config.testUser.email,
+      password: config.testUser.password,
+    });
+  }
 
   return { existingUsers };
 }

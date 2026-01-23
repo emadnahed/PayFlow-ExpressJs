@@ -23,7 +23,7 @@
 
     "test:api": "./scripts/test-api.sh",
     "test:api:local": "ENV=local API_URL=http://localhost:3000 ./scripts/test-api.sh",
-    "test:api:docker": "ENV=docker-local API_URL=http://localhost:3000 ./scripts/test-api.sh",
+    "test:api:docker": "ENV=docker-local API_URL=http://localhost:3001 ./scripts/test-api.sh",
     "test:api:vps": "ENV=vps ./scripts/test-api.sh",
     "test:api:staging": "ENV=staging ./scripts/test-api.sh",
     "test:api:production": "ENV=production ./scripts/test-api.sh",

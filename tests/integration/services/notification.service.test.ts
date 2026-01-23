@@ -72,7 +72,9 @@ describe('Notification Service Integration Tests', () => {
       expect(notificationId).toMatch(/^ntf_/);
 
       const stats = await getNotificationQueueStats();
-      expect(stats.waiting).toBeGreaterThanOrEqual(1);
+      // Job may be waiting, active, or completed depending on if a worker is running
+      const totalJobs = stats.waiting + stats.active + stats.completed;
+      expect(totalJobs).toBeGreaterThanOrEqual(1);
     });
 
     it('should queue transaction completed notification', async () => {
@@ -123,8 +125,8 @@ describe('Notification Service Integration Tests', () => {
         'txn_details_test'
       );
 
-      // Get the job from queue
-      const jobs = await queue.getJobs(['waiting']);
+      // Get the job from queue (check all states as worker may process jobs)
+      const jobs = await queue.getJobs(['waiting', 'active', 'completed']);
       const job = jobs.find((j) => j.data.data?.transactionId === 'txn_details_test');
 
       expect(job).toBeDefined();
@@ -155,6 +157,7 @@ describe('Notification Service Integration Tests', () => {
   describe('Queue Statistics', () => {
     it('should report queue statistics', async () => {
       const initialStats = await getNotificationQueueStats();
+      const initialTotal = initialStats.waiting + initialStats.active + initialStats.completed;
 
       // Queue multiple notifications
       await notificationService.notifyTransactionInitiated(testUserId, 100, 'INR', 'txn_1');
@@ -162,8 +165,10 @@ describe('Notification Service Integration Tests', () => {
       await notificationService.notifyCreditReceived(testUserId, 'User', 300, 'INR', 'txn_3');
 
       const afterStats = await getNotificationQueueStats();
+      const afterTotal = afterStats.waiting + afterStats.active + afterStats.completed;
 
-      expect(afterStats.waiting).toBe(initialStats.waiting + 3);
+      // Jobs may be waiting, active, or completed depending on if a worker is running
+      expect(afterTotal).toBe(initialTotal + 3);
     });
   });
 
@@ -173,9 +178,11 @@ describe('Notification Service Integration Tests', () => {
 
       await notificationService.notifyTransactionInitiated(testUserId, 1000, 'INR', 'txn_template_1');
 
-      const jobs = await queue.getJobs(['waiting']);
+      // Check all states as worker may process jobs
+      const jobs = await queue.getJobs(['waiting', 'active', 'completed']);
       const job = jobs.find((j) => j.data.data?.transactionId === 'txn_template_1');
 
+      expect(job).toBeDefined();
       expect(job!.data.title).toBeDefined();
       expect(job!.data.message).toBeDefined();
       expect(job!.data.message.length).toBeGreaterThan(0);
@@ -192,9 +199,11 @@ describe('Notification Service Integration Tests', () => {
         'txn_template_2'
       );
 
-      const jobs = await queue.getJobs(['waiting']);
+      // Check all states as worker may process jobs
+      const jobs = await queue.getJobs(['waiting', 'active', 'completed']);
       const job = jobs.find((j) => j.data.data?.transactionId === 'txn_template_2');
 
+      expect(job).toBeDefined();
       expect(job!.data.data?.senderName).toBe('Alice Johnson');
     });
   });
@@ -215,7 +224,9 @@ describe('Notification Service Integration Tests', () => {
       expect(new Set(notificationIds).size).toBe(20); // All unique
 
       const stats = await getNotificationQueueStats();
-      expect(stats.waiting).toBeGreaterThanOrEqual(20);
+      // Jobs may be waiting, active, or completed depending on if a worker is running
+      const totalJobs = stats.waiting + stats.active + stats.completed;
+      expect(totalJobs).toBeGreaterThanOrEqual(20);
     });
 
     it('should handle notifications for multiple users', async () => {
@@ -257,7 +268,8 @@ describe('Notification Service Integration Tests', () => {
       await notificationService.notifyTransactionFailed(testUserId, 150, 'INR', 'txn_type_3');
       await notificationService.notifyCreditReceived(testUserId, 'User', 250, 'INR', 'txn_type_4');
 
-      const jobs = await queue.getJobs(['waiting']);
+      // Check all states as worker may process jobs
+      const jobs = await queue.getJobs(['waiting', 'active', 'completed']);
 
       const types = jobs.map((j) => j.data.type);
       expect(types).toContain(NotificationType.TRANSACTION_INITIATED);
@@ -292,7 +304,7 @@ describe('Notification Service Integration Tests', () => {
 
       // First job should be in queue
       const stats1 = await getNotificationQueueStats();
-      const initialWaiting = stats1.waiting;
+      const initialTotal = stats1.waiting + stats1.active + stats1.completed;
 
       // Same notification shouldn't add duplicate (if using same notificationId)
       // Note: In practice, each call generates a new notificationId,
@@ -300,7 +312,9 @@ describe('Notification Service Integration Tests', () => {
       await notificationService.notifyTransactionInitiated(testUserId, 100, 'INR', 'txn_dedup_2');
 
       const stats2 = await getNotificationQueueStats();
-      expect(stats2.waiting).toBe(initialWaiting + 1);
+      const afterTotal = stats2.waiting + stats2.active + stats2.completed;
+      // Jobs may be waiting, active, or completed depending on if a worker is running
+      expect(afterTotal).toBe(initialTotal + 1);
     });
   });
 });

@@ -76,11 +76,18 @@ export function setup() {
     }
   }
 
-  // Add default test users
-  users.push({
-    email: config.testUser.email,
-    password: config.testUser.password,
-  });
+  // Register and add default test user
+  const testUser1Response = apiClient.register(
+    config.testUser.email,
+    config.testUser.password,
+    'Ledger Test User Default'
+  );
+  if (testUser1Response.status === 201 || testUser1Response.status === 200 || testUser1Response.status === 409) {
+    users.push({
+      email: config.testUser.email,
+      password: config.testUser.password,
+    });
+  }
 
   return { users };
 }

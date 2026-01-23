@@ -3,9 +3,9 @@
  * Used for testing against Docker containers running locally
  */
 export const config = {
-  // Docker container typically exposes on localhost
-  // Adjust port if your docker-compose uses different mapping
-  baseUrl: __ENV.API_URL || 'http://localhost:3000',
+  // Docker test container exposes on localhost:3001
+  // (docker-compose.test.yml maps 3001:3000)
+  baseUrl: __ENV.API_URL || 'http://localhost:3001',
 
   // Test user credentials
   testUser: {
