@@ -24,6 +24,8 @@ services:
       - REDIS_PORT=6379
       - JWT_SECRET=test-secret-for-testing-only
       - JWT_EXPIRES_IN=1h
+      - BCRYPT_ROUNDS=10
+      - CLUSTER_WORKERS=4
     depends_on:
       mongodb-test:
         condition: service_healthy

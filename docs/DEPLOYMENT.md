@@ -22,6 +22,38 @@ npm run docker:up
 npm run dev
 ```
 
+## Infrastructure Management
+
+### Test Infrastructure (for running tests locally)
+
+| Command | Description |
+|---------|-------------|
+| `npm run infra:local:up` | Start test MongoDB (27018) + Redis (6380) |
+| `npm run infra:local:down` | Stop test infrastructure |
+| `npm run infra:local:status` | Check test infrastructure status |
+
+### Development Infrastructure (full Docker stack)
+
+| Command | Description |
+|---------|-------------|
+| `npm run infra:docker:up` | Start full Docker stack (API + DB + Redis) |
+| `npm run infra:docker:down` | Stop Docker stack |
+| `npm run infra:docker:status` | Check Docker stack status |
+
+### Quick Test Run
+
+```bash
+# Run all tests with automatic infrastructure management
+npm run test:run:local        # Local development
+npm run test:run:docker       # Docker-based
+
+# Or manually
+npm run infra:local:up        # Start test DBs
+npm run dev &                 # Start API
+npm run test:full:local       # Run all tests
+npm run infra:local:down      # Cleanup
+```
+
 ## Environment Configuration
 
 ### Required Variables
@@ -41,10 +73,14 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
-# JWT
+# JWT Authentication
 JWT_SECRET=your-super-secret-key-min-32-chars
-JWT_EXPIRES_IN=1h
-JWT_REFRESH_EXPIRES_IN=7d
+JWT_EXPIRES_IN=7d
+JWT_ACCESS_TOKEN_EXPIRES_IN=15m
+JWT_REFRESH_TOKEN_EXPIRES_IN=7d
+
+# API Configuration
+API_BODY_LIMIT=10kb
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
@@ -57,11 +93,83 @@ LOG_LEVEL=info
 
 ### Environment-Specific Configs
 
-| Variable | Development | Production |
-|----------|-------------|------------|
-| NODE_ENV | development | production |
-| LOG_LEVEL | debug | info |
-| RATE_LIMIT_MAX | 1000 | 100 |
+| Variable | Development | Test | Production |
+|----------|-------------|------|------------|
+| NODE_ENV | development | test | production |
+| LOG_LEVEL | debug | error | info |
+| RATE_LIMIT_MAX | 1000 | 10000 | 100 |
+| MONGODB_PORT | 27017 | 27018 | 27017 |
+| REDIS_PORT | 6379 | 6380 | 6379 |
+| API_PORT | 3000 | 3001 | 3000 |
+
+### Automatic Environment Switching
+
+PayFlow uses a centralized environment configuration system (`src/config/environments.ts`) that automatically adjusts settings based on `NODE_ENV`. You don't need separate `.env` files per environment.
+
+**Setup:**
+
+```bash
+# Copy template and edit with your values
+cp .env.example .env
+
+# Run different environments - settings auto-adjust
+NODE_ENV=development npm run dev    # Dev defaults
+NODE_ENV=test npm test              # Test defaults (fast bcrypt, etc.)
+NODE_ENV=production npm start       # Prod defaults + validation
+```
+
+**Auto-Adjusted Settings:**
+
+| Setting | Development | Test | Production |
+|---------|-------------|------|------------|
+| Bcrypt Rounds | 10 (~160ms) | 4 (fast) | 12 (~640ms) |
+| Rate Limit | 1000 req/15min | 10000 | 100 |
+| Log Level | debug | error | info |
+| JWT Access Token | 1h | 1h | 15m |
+| Webhook Timeout | 5s | 5s | 10s |
+| CORS Origins | localhost | localhost | Configured domains |
+
+**Environment Flags (in code):**
+
+```typescript
+import { isProduction, isDevelopment, isTest } from './config';
+
+// Conditional logic based on environment
+const timeout = isProduction ? 10000 : 5000;
+const enableDebug = !isProduction;
+
+// Direct config access
+import { BCRYPT_ROUNDS, RATE_LIMIT_CONFIG } from './config/environments';
+```
+
+**Production Validation:**
+
+The app validates required environment variables on startup in production:
+
+```typescript
+import { validateProductionEnv } from './config';
+
+// Called during app startup - throws if missing required vars
+validateProductionEnv();
+// Validates: JWT_SECRET (32+ chars), MONGODB_URI, REDIS_HOST
+```
+
+### Port Configuration
+
+**Test Environment** uses different ports to avoid conflicts with development:
+
+| Service | Development Port | Test Port |
+|---------|-----------------|-----------|
+| API | 3000 | 3001 |
+| MongoDB | 27017 | 27018 |
+| Redis | 6379 | 6380 |
+
+When running E2E tests locally with Docker test containers:
+
+```bash
+# Set Redis port for tests
+REDIS_PORT=6380 npm run test:e2e
+```
 
 ## Docker Deployment
 

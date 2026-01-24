@@ -62,7 +62,7 @@ async function runLoadTest(scenario: TestScenario, config: LoadTestConfig): Prom
   console.log(`Connections: ${config.connections}, Duration: ${config.duration}s`);
   console.log('='.repeat(60));
 
-  const instance = autocannon({
+  const result = await autocannon({
     url: `${config.url}${scenario.endpoint}`,
     connections: config.connections,
     duration: config.duration,
@@ -73,10 +73,6 @@ async function runLoadTest(scenario: TestScenario, config: LoadTestConfig): Prom
     },
     body: scenario.body ? JSON.stringify(scenario.body) : undefined,
   });
-
-  autocannon.track(instance, { renderProgressBar: true });
-
-  const result = await instance;
 
   console.log('\nResults:');
   console.log(`  Requests/sec: ${result.requests.average}`);

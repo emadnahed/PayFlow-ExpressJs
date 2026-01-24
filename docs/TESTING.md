@@ -1,5 +1,24 @@
 # PayFlow Testing Guide
 
+## Quick Start
+
+```bash
+# 1. Unit tests (no infrastructure needed)
+npm run test:unit
+
+# 2. Full test suite with orchestration (recommended)
+npm run test:run:local       # Starts infra, API, runs all tests, cleans up
+npm run test:run:docker      # Same but with Docker infrastructure
+
+# 3. Manual step-by-step
+npm run infra:local:up       # Start MongoDB + Redis
+npm run dev &                # Start API server
+npm run test:full:local      # Run Unit + Integration + E2E + Curl + K6
+npm run infra:local:down     # Cleanup
+```
+
+---
+
 ## Overview
 
 PayFlow uses a tiered testing strategy to ensure code quality while maintaining fast feedback loops. Tests are organized by their infrastructure requirements.
@@ -24,22 +43,290 @@ PayFlow uses a tiered testing strategy to ensure code quality while maintaining 
 │  Complete HTTP flow testing with all services running           │
 │  Command: npm run test:e2e                                      │
 └─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  TIER 4: cURL API Tests (Running API Required)                  │
+│  Manual API testing with jq beautification                      │
+│  Command: npm run test:api                                      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Test Commands
+## All Test Commands
 
-| Command | Description | Infrastructure Required |
-|---------|-------------|------------------------|
-| `npm test` | Run all tests | MongoDB + Redis |
-| `npm run test:unit` | Unit tests only | None |
-| `npm run test:integration` | Integration tests | MongoDB + Redis |
-| `npm run test:e2e` | End-to-end tests | MongoDB + Redis |
-| `npm run test:coverage` | Tests with coverage report | MongoDB + Redis |
-| `npm run test:watch` | Watch mode for development | MongoDB + Redis |
-| `npm run test:ci` | CI pipeline tests | MongoDB + Redis |
-| `npm run chaos-test` | Chaos/reliability tests | MongoDB + Redis |
+### Infrastructure Management
+
+| Command | Description |
+|---------|-------------|
+| `npm run infra:local:up` | Start test MongoDB (27018) + Redis (6380) |
+| `npm run infra:local:down` | Stop test infrastructure |
+| `npm run infra:local:status` | Check test infrastructure status |
+| `npm run infra:docker:up` | Start full Docker stack (API + DB + Redis) |
+| `npm run infra:docker:down` | Stop Docker stack |
+| `npm run infra:docker:status` | Check Docker stack status |
+
+### Orchestrated Full Test Suite (Recommended)
+
+These commands handle infrastructure startup, run all tests, and cleanup automatically:
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:run:local` | Full suite: Unit + Integration + E2E + Curl + K6 (local) |
+| `npm run test:run:docker` | Full suite with Docker infrastructure |
+| `npm run test:run:vps` | Unit + Curl + K6 against VPS |
+| `npm run test:run:staging` | Unit + Curl + K6 against staging |
+| `npm run test:run:production` | Unit + Curl + K6 against production |
+
+### Full Test Suite (Manual Infrastructure)
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:full:local` | Unit + Integration + E2E + Curl + K6 (local) |
+| `npm run test:full:docker` | Unit + Integration + E2E + Curl + K6 (docker) |
+| `npm run test:full:vps` | Unit + Curl + K6 (VPS) |
+| `npm run test:full:staging` | Unit + Curl + K6 (staging) |
+| `npm run test:full:production` | Unit + Curl + K6 (production) |
+
+### Unit Tests (No Infrastructure)
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:unit` | Run 428+ unit tests (fast, isolated) |
+
+### Jest Tests (Require MongoDB + Redis)
+
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run all Jest tests |
+| `npm run test:watch` | Watch mode for development |
+| `npm run test:verbose` | Verbose output with details |
+| `npm run test:coverage` | Generate coverage report |
+| `npm run test:ci` | CI pipeline (with coverage + force exit) |
+| `npm run test:integration` | Integration tests only (214+ tests) |
+| `npm run test:e2e` | E2E tests (local Redis 6379) |
+| `npm run test:e2e:docker` | E2E tests (Docker Redis 6380) |
+| `npm run test:jest:local` | Unit + Integration + E2E combined |
+| `npm run test:jest:docker` | Unit + Integration + E2E (Docker ports) |
+| `npm run test:chaos` | Chaos/failure scenario tests |
+| `npm run test:load` | Load/performance tests |
+
+### cURL API Tests (Require Running API)
+
+| Command | Description |
+|---------|-------------|
+| `npm run test:api` | Run curl tests (default environment) |
+| `npm run test:api:local` | Curl tests against localhost:3000 |
+| `npm run test:api:docker` | Curl tests against Docker (localhost:3000) |
+| `npm run test:api:vps` | Curl tests against VPS (set VPS_API_URL) |
+| `npm run test:api:staging` | Curl tests against staging (set STAGING_API_URL) |
+| `npm run test:api:production` | Curl tests against production (set PRODUCTION_API_URL) |
+| `npm run test:api:verbose` | Curl tests with response body output |
+
+### K6 Load Tests
+
+| Command | Description |
+|---------|-------------|
+| `npm run k6:local` | K6 smoke + load + stress (local) |
+| `npm run k6:docker` | K6 smoke + load + stress (docker-local) |
+| `npm run k6:vps` | K6 smoke + load + stress (VPS) |
+| `npm run k6:staging` | K6 smoke + load + stress (staging) |
+| `npm run k6:production` | K6 smoke + load + stress (production) |
+
+### Docker Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run docker:test` | Start only MongoDB + Redis |
+| `npm run docker:test:all` | Start MongoDB + Redis + API |
+| `npm run docker:test:down` | Stop all test containers |
+| `npm run docker:test:logs` | View API container logs |
+
+---
+
+## Common Workflows
+
+### Run Full Test Suite (Easiest - Recommended)
+
+```bash
+# Orchestrated: handles infrastructure, API, tests, and cleanup
+npm run test:run:local       # For local development
+npm run test:run:docker      # For Docker-based testing
+```
+
+### Run Unit Tests Only (No Setup Required)
+
+```bash
+npm run test:unit
+```
+
+### Run Jest Tests (Unit + Integration + E2E)
+
+```bash
+# Start infrastructure first
+npm run infra:local:up
+
+# Run all Jest tests
+npm run test:jest:local
+
+# Cleanup
+npm run infra:local:down
+```
+
+### Run cURL API Tests
+
+```bash
+# Start infrastructure and API
+npm run infra:local:up
+npm run dev &                 # Start API in background
+
+# Run curl tests
+npm run test:api:local
+
+# Or with verbose output
+VERBOSE=true npm run test:api:local
+
+# Cleanup
+pkill -f "ts-node src/server"
+npm run infra:local:down
+```
+
+### Run K6 Load Tests
+
+```bash
+# Start infrastructure and API
+npm run infra:local:up
+npm run dev &
+
+# Run K6 tests
+npm run k6:local              # Runs smoke + load + stress tests
+
+# Or run from load-testing directory
+cd load-testing
+npm run test:full:local
+
+# Cleanup
+npm run infra:local:down
+```
+
+### Run Tests Against Remote Environments
+
+```bash
+# Against VPS (set API URL)
+VPS_API_URL=https://api.yourvps.com npm run test:run:vps
+
+# Against staging
+STAGING_API_URL=https://staging.example.com npm run test:run:staging
+
+# Against production (conservative)
+PRODUCTION_API_URL=https://api.example.com npm run test:run:production
+```
+
+### Run All Tests for CI
+
+```bash
+npm run docker:test:all
+npm run test:ci
+npm run docker:test:down
+```
+
+### Development Workflow
+
+```bash
+# Start infrastructure
+npm run infra:local:up
+
+# Run tests in watch mode
+npm run test:watch
+
+# Or run specific test file
+npm test -- tests/e2e/auth.test.ts
+```
+
+---
+
+## Port Configuration
+
+| Service | Development | Docker Test |
+|---------|-------------|-------------|
+| API | 3000 | 3001 |
+| MongoDB | 27017 | 27018 |
+| Redis | 6379 | 6380 |
+
+**Note:** Docker test uses different ports to avoid conflicts with local development.
+
+---
+
+## Rate Limiting and Load Testing
+
+PayFlow uses environment-based rate limiting configuration that adjusts thresholds based on `NODE_ENV`. This ensures load tests can run without hitting rate limits while maintaining strict limits in production.
+
+### Rate Limit Configuration by Environment
+
+| Limiter | Development | Test | Production |
+|---------|-------------|------|------------|
+| Global | 1000 req/15min | 10000 | 100 |
+| Auth | 100 req/15min | 10000 | 5 |
+| Transaction | 200 req/15min | 10000 | 50 |
+| API | 500 req/15min | 10000 | 100 |
+| Webhook | 200 req/15min | 10000 | 50 |
+
+### Load Test Bypass Header
+
+For scenarios where you need to bypass rate limiting (e.g., load testing against staging or production), PayFlow supports a bypass header mechanism:
+
+```bash
+# Set the LOAD_TEST_SECRET environment variable on the server
+LOAD_TEST_SECRET=your-secret-token
+
+# Pass the token in requests via X-Load-Test-Token header
+curl -H "X-Load-Test-Token: your-secret-token" http://localhost:3000/health
+```
+
+**Security Notes:**
+- The bypass header only works when `LOAD_TEST_SECRET` is set on the server
+- In test mode, the default secret is `test-load-secret`
+- For production, use a strong, unique secret and rotate it regularly
+- Never commit secrets to version control
+
+### K6 Environment Configuration
+
+Each k6 environment configuration includes a `loadTestToken` setting:
+
+| Environment | Default Token | Base URL |
+|-------------|---------------|----------|
+| local | `test-load-secret` | `http://localhost:3000` |
+| docker-local | `test-load-secret` | `http://localhost:3001` |
+| vps | *(env var required)* | `https://api.yourdomain.com` |
+| staging | *(env var required)* | `https://staging-api.example.com` |
+| production | *(env var required)* | `https://api.example.com` |
+
+### Running Load Tests with Custom Token
+
+```bash
+# Local/Docker (uses default test secret)
+npm run k6:local
+npm run k6:docker
+
+# VPS/Staging/Production (pass token via environment variable)
+k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+
+# Or set environment variables before running
+export API_URL=https://api.yourdomain.com
+export LOAD_TEST_TOKEN=your-secret
+npm run k6:vps
+```
+
+### Disabling Rate Limiting
+
+For development/debugging, you can completely disable rate limiting:
+
+```bash
+# Disable all rate limiters
+RATE_LIMIT_DISABLED=true npm run dev
+```
+
+**Warning:** Never disable rate limiting in production environments.
 
 ---
 
@@ -512,9 +799,11 @@ Coverage report is generated in `coverage/` directory:
 
 | Category | Tests |
 |----------|-------|
-| Unit Tests | 462 |
-| E2E Tests | ~140 |
-| Total | 600+ |
+| Unit Tests | 428 |
+| Integration Tests | 214 |
+| E2E Tests | 212 |
+| cURL API Tests | 29 |
+| Total | 883+ |
 
 ---
 
@@ -597,42 +886,256 @@ const response = await request(app)
 
 ---
 
-## Load Testing
+## Manual API Testing (cURL)
 
-Performance tests are in `tests/load/`:
+A comprehensive cURL-based test script (`scripts/test-api.sh`) tests all API endpoints:
 
 ```bash
-# Run load tests (requires k6 or similar)
-npm run load-test
+# Run against different environments
+npm run test:api:local        # localhost:3000
+npm run test:api:docker       # Docker (localhost:3000)
+npm run test:api:vps          # VPS (set VPS_API_URL)
+npm run test:api:staging      # Staging (set STAGING_API_URL)
+npm run test:api:production   # Production (set PRODUCTION_API_URL)
+
+# Enable verbose mode (shows response bodies)
+VERBOSE=true npm run test:api:local
+
+# Direct script usage
+ENV=local API_URL=http://localhost:3000 ./scripts/test-api.sh
 ```
 
-### Sample Load Test
+### Environment Variables for Remote Testing
 
-```typescript
-// tests/load/transaction.load.ts
+```bash
+# VPS
+VPS_API_URL=https://api.yourvps.com npm run test:api:vps
+
+# Staging
+STAGING_API_URL=https://staging.example.com npm run test:api:staging
+
+# Production
+PRODUCTION_API_URL=https://api.example.com npm run test:api:production
+```
+
+### Test Script Features
+
+| Feature | Description |
+|---------|-------------|
+| **29 Tests** | Comprehensive coverage of all API endpoints |
+| **Multi-Environment** | Supports local, docker, vps, staging, production |
+| **Auto-Authentication** | Registers user, stores token, reuses for all tests |
+| **CRUD Flows** | Create → Read → Update → Delete patterns |
+| **Error Cases** | Validates error responses (401, 404, 400) |
+| **jq Support** | Uses jq for JSON parsing if available |
+| **Color Output** | Pass/fail indicators with ANSI colors |
+
+### Endpoints Tested
+
+- **Root & Docs**: `/`, `/api-docs`, `/api-docs.json`
+- **Health**: `/health`, `/health/live`, `/health/ready`
+- **Metrics**: `/metrics`
+- **Auth**: Register, login, refresh, profile, unauthorized access
+- **Wallet**: Get wallet, deposit, history, balance by ID
+- **Transaction**: List, create (validation), get by ID
+- **Webhook**: Full CRUD, logs
+- **Ledger**: Simulation config, update, reset
+
+### Sample Output
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║           PayFlow API Integration Test Suite                  ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Environment: local
+API URL:     http://localhost:3000
+Verbose:     false
+Test User:   apitest_1234567890@example.com
+
+► Testing: Checking API connectivity...
+  ✓ PASS: API is reachable
+
+═══════════════════════════════════════════════════════════════
+  Health Check Endpoints
+═══════════════════════════════════════════════════════════════
+► Testing: GET /health
+  ✓ PASS: Health endpoint returns 200
+► Testing: GET /health/live
+  ✓ PASS: Liveness endpoint returns 200
+
+...
+
+═══════════════════════════════════════════════════════════════
+  Test Summary
+═══════════════════════════════════════════════════════════════
+
+  Passed:  29
+  Failed:  0
+  Skipped: 0
+
+  Pass Rate: 100%
+
+All tests passed!
+```
+
+---
+
+## Load Testing with k6
+
+PayFlow includes a comprehensive k6-based load testing suite in the `load-testing/` directory.
+
+### Prerequisites
+
+```bash
+# Install k6 (macOS)
+brew install k6
+
+# Install k6 (Linux)
+sudo apt-get install k6
+
+# Install k6 (Windows)
+choco install k6
+```
+
+### Quick Start (From Root Directory)
+
+```bash
+# Full K6 suite (smoke + load + stress) for each environment
+npm run k6:local              # Against localhost:3000
+npm run k6:docker             # Against Docker (localhost:3000)
+npm run k6:vps                # Against VPS
+npm run k6:staging            # Against staging
+npm run k6:production         # Against production
+```
+
+### Quick Start (From load-testing Directory)
+
+```bash
+cd load-testing
+
+# Full suite per environment
+npm run test:full:local       # smoke + load + stress (local)
+npm run test:full:docker      # smoke + load + stress (docker)
+npm run test:full:vps         # smoke + load + stress (VPS)
+npm run test:full:staging     # smoke + load + stress (staging)
+npm run test:full:production  # smoke + load + stress (production)
+
+# Individual tests
+npm run test:smoke:docker     # Quick health check (1 VU, 1 min)
+npm run test:load:docker      # Standard load test (10-100 VUs, 16 min)
+npm run test:stress:docker    # Find breaking points (up to 500 VUs)
+npm run test:soak:docker      # Long-running stability (30 VUs, 1+ hour)
+
+# Test against VPS with custom URL
+k6 run -e ENV=vps -e API_URL=https://your-vps.com tests/smoke/smoke.test.js
+```
+
+### Test Types
+
+| Type | Purpose | VUs | Duration |
+|------|---------|-----|----------|
+| **Smoke** | Quick health checks | 1 | 1 min |
+| **Load** | Standard performance | 10-100 | 16 min |
+| **Stress** | Find breaking points | up to 500 | 22 min |
+| **Spike** | Sudden load spikes | up to 400 | 15 min |
+| **Soak** | Long-running stability | 30 | 1-12 hours |
+
+### Environment Configuration
+
+The load testing suite supports multiple environments with automatic rate limit bypass:
+
+| Environment | API URL | Rate Limit Bypass |
+|-------------|---------|-------------------|
+| `local` | `http://localhost:3000` | Auto (test-load-secret) |
+| `docker-local` | `http://localhost:3001` | Auto (test-load-secret) |
+| `vps` | Set via `API_URL` env | Requires `LOAD_TEST_TOKEN` |
+| `staging` | Set via `API_URL` env | Requires `LOAD_TEST_TOKEN` |
+| `production` | Set via `API_URL` env | Requires `LOAD_TEST_TOKEN` |
+
+```bash
+# Local development (non-Docker) - auto bypasses rate limits
+k6 run -e ENV=local tests/smoke/smoke.test.js
+
+# Docker containers on localhost - auto bypasses rate limits
+k6 run -e ENV=docker-local tests/smoke/smoke.test.js
+
+# VPS/Remote - requires load test token for rate limit bypass
+k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+
+# Staging environment - requires load test token
+k6 run -e ENV=staging -e API_URL=https://staging.example.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+
+# Production (use with caution!) - requires load test token
+k6 run -e ENV=production -e API_URL=https://api.example.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+```
+
+**Note:** The `X-Load-Test-Token` header is automatically added to all k6 requests when `loadTestToken` is configured. See [Rate Limiting and Load Testing](#rate-limiting-and-load-testing) for details.
+
+### Performance Thresholds
+
+| Metric | Local | Staging | Production |
+|--------|-------|---------|------------|
+| p95 Response Time | <2000ms | <1000ms | <500ms |
+| p99 Response Time | <5000ms | <2000ms | <1000ms |
+| Error Rate | <5% | <1% | <0.1% |
+
+### Generating Reports
+
+```bash
+# Run test with JSON output
+k6 run --out json=results/test_results.json tests/load/api.test.js
+
+# Generate HTML report
+node scripts/generate-report.js results/test_results.json
+
+# Compare against baseline
+node scripts/compare-baselines.js results/test_results_summary.json
+```
+
+### CI/CD Integration
+
+Load tests are integrated with GitHub Actions:
+
+- **On Push/PR**: Smoke tests run automatically
+- **Manual Trigger**: Load, stress, and soak tests can be triggered manually
+- **Scheduled**: Smoke tests every 6 hours, load tests daily, soak tests weekly
+
+See [load-testing/README.md](../load-testing/README.md) for complete documentation.
+
+### Sample k6 Test
+
+```javascript
+// tests/load/api.test.js
+import { check, group, sleep } from 'k6';
 import http from 'k6/http';
-import { check } from 'k6';
 
 export const options = {
-  vus: 10,           // Virtual users
-  duration: '30s',   // Test duration
+  stages: [
+    { duration: '1m', target: 10 },   // Ramp up
+    { duration: '3m', target: 50 },   // Steady state
+    { duration: '1m', target: 0 },    // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<1000'],
+    http_req_failed: ['rate<0.01'],
+  },
 };
 
 export default function() {
-  const response = http.post('http://localhost:3000/transactions', {
-    receiverId: 'test-receiver',
-    amount: 10,
-  }, {
-    headers: {
-      'Authorization': `Bearer ${__ENV.TOKEN}`,
-      'Content-Type': 'application/json',
-    },
+  group('Authentication', function() {
+    const loginRes = http.post(`${__ENV.API_URL}/api/auth/login`,
+      JSON.stringify({ email: 'test@example.com', password: 'password' }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    check(loginRes, {
+      'login successful': (r) => r.status === 200,
+      'has token': (r) => JSON.parse(r.body).accessToken !== undefined,
+    });
   });
 
-  check(response, {
-    'status is 201': (r) => r.status === 201,
-    'response time < 500ms': (r) => r.timings.duration < 500,
-  });
+  sleep(1);
 }
 ```
 

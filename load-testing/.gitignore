@@ -1,0 +1,30 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test results
+results/
+*.json
+!package.json
+!package-lock.json
+
+# Reports
+reports/
+*.html
+
+# Node modules (if any npm packages added)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log

@@ -102,13 +102,15 @@ PayFlow is an event-driven payment system built with Express.js, implementing th
        │                │
   Mark Complete    Refund Sender
        │                │
-       ▼         ┌──────┴──────┐
-┌─────────────┐  │             │
-│  COMPLETED  │  ▼             ▼
-└─────────────┘ ┌─────────────┐┌─────────────┐
-                │  REFUNDED   ││   FAILED    │
-                └─────────────┘└─────────────┘
+       ▼                ▼
+┌─────────────┐  ┌─────────────┐
+│  COMPLETED  │  │   FAILED    │
+└─────────────┘  └─────────────┘
 ```
+
+**Terminal States:** COMPLETED, FAILED (no further transitions allowed)
+
+**Note:** REFUNDING always transitions to FAILED after compensation completes (sender refunded).
 
 ## Component Responsibilities
 
@@ -139,6 +141,15 @@ PayFlow is an event-driven payment system built with Express.js, implementing th
 | MongoDB | Persistent data (users, wallets, transactions) |
 | Redis | Caching, sessions, pub/sub, rate limits |
 | BullMQ | Job queues for async processing |
+
+### BullMQ Queues
+
+| Queue Name | Purpose |
+|------------|---------|
+| `payflow-webhooks` | Webhook delivery with retries |
+| `payflow-notifications` | Async notification processing |
+
+**Note:** Queue names use hyphens (not colons) as BullMQ uses colons as Redis key separators.
 
 ## Saga Pattern Implementation
 
@@ -259,6 +270,201 @@ Client                    Server                    Database
 6. **Input Validation**: express-validator sanitization
 7. **Idempotency**: Duplicate request prevention
 
+## Worker-Based Bcrypt Hashing
+
+To prevent bcrypt operations from blocking the main event loop, PayFlow uses Node.js Worker Threads for password hashing.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Main Thread (Event Loop)                     │
+│                                                                  │
+│   Request ──▶ Auth Controller ──▶ Bcrypt Utility ──────────┐   │
+│                                                              │   │
+│   Response ◀── Promise Resolution ◀──────────────────────┐ │   │
+└──────────────────────────────────────────────────────────┼─┼───┘
+                                                            │ │
+                                                            │ │
+┌───────────────────────────────────────────────────────────┼─┼───┐
+│                     Worker Thread Pool                    │ │   │
+│                                                           │ │   │
+│   ┌──────────────────────┐                               │ │   │
+│   │  bcryptWorker.ts     │◀──────────────────────────────┘ │   │
+│   │                      │                                  │   │
+│   │  - hash(password)    │                                  │   │
+│   │  - compare(pwd,hash) │──────────────────────────────────┘   │
+│   └──────────────────────┘                                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Details
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Bcrypt Utility | `src/utils/bcrypt.ts` | Main thread API (hashPassword, comparePassword) |
+| Bcrypt Worker | `src/utils/bcryptWorker.ts` | Worker thread that performs actual hashing |
+
+### Benefits
+
+1. **Non-Blocking**: Main event loop remains responsive during hashing
+2. **Better Throughput**: Multiple hash operations can run in parallel
+3. **Configurable Rounds**: bcrypt rounds configurable via `BCRYPT_ROUNDS` env var
+4. **Fallback**: Uses synchronous bcrypt in development for simplicity
+
+### Configuration
+
+```bash
+# Environment Variables
+BCRYPT_ROUNDS=10          # Number of bcrypt rounds (default: 10)
+USE_BCRYPT_WORKER=true    # Enable worker threads (default: true in production)
+```
+
+## Clustering
+
+PayFlow supports multi-process clustering for optimal CPU utilization.
+
+### Cluster Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Primary Process                           │
+│                                                                  │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │                  cluster.ts (Primary)                    │  │
+│   │                                                          │  │
+│   │  - Forks worker processes                                │  │
+│   │  - Monitors worker health                                │  │
+│   │  - Respawns crashed workers                              │  │
+│   └──────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│              ┌───────────────┼───────────────┐                  │
+│              │               │               │                   │
+│              ▼               ▼               ▼                   │
+│   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│   │  Worker 1    │ │  Worker 2    │ │  Worker N    │           │
+│   │  (Express)   │ │  (Express)   │ │  (Express)   │           │
+│   └──────────────┘ └──────────────┘ └──────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    Load Balanced Requests
+```
+
+### Configuration
+
+```bash
+# Environment Variables
+CLUSTER_WORKERS=4         # Number of workers (default: CPU cores)
+```
+
+### Usage
+
+```bash
+# Development
+npm run dev:cluster       # Start clustered dev server
+
+# Production
+npm run start:cluster     # Start clustered production server
+```
+
+### Production Recommendations
+
+| Setting | Development | Production |
+|---------|-------------|------------|
+| Workers | 2 | 4-8 (based on CPU cores) |
+| Bcrypt Rounds | 10 | 12 |
+| Worker Threads | Disabled | Enabled |
+
+## Environment Configuration Architecture
+
+PayFlow uses a centralized configuration system that automatically adjusts settings based on the runtime environment.
+
+### Configuration Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Application Startup                           │
+│                                                                  │
+│   .env file ──▶ dotenv.config() ──▶ process.env                │
+│                                                                  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               src/config/environments.ts                         │
+│                                                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │  Environment Detection                                   │  │
+│   │                                                          │  │
+│   │  NODE_ENV ──▶ isProduction / isDevelopment / isTest     │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│   ┌──────────────────────────┼──────────────────────────┐      │
+│   │                          │                          │       │
+│   ▼                          ▼                          ▼       │
+│ ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐  │
+│ │ MONGODB_URI  │  │ BCRYPT_ROUNDS    │  │ RATE_LIMIT_CONFIG│  │
+│ │ REDIS_CONFIG │  │ JWT_CONFIG       │  │ LOG_CONFIG       │  │
+│ │ API_CONFIG   │  │ WEBHOOK_CONFIG   │  │ SECURITY_CONFIG  │  │
+│ └──────────────┘  └──────────────────┘  └──────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   src/config/index.ts                            │
+│                                                                  │
+│   Exports unified `config` object + individual configs           │
+│   Re-exports environment flags for easy access                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `.env.example` | Template with all variables (commit this) |
+| `.env` | Actual values (gitignored, never commit) |
+| `src/config/environments.ts` | Environment-specific defaults |
+| `src/config/index.ts` | Main config exports |
+
+### Auto-Adjusted Settings by Environment
+
+| Setting | Development | Test | Production |
+|---------|-------------|------|------------|
+| `BCRYPT_ROUNDS` | 10 | 4 | 12 |
+| `RATE_LIMIT_MAX` | 1000 | 10000 | 100 |
+| `LOG_LEVEL` | debug | error | info |
+| `JWT_ACCESS_EXPIRES` | 1h | 1h | 15m |
+| `WEBHOOK_TIMEOUT` | 5s | 5s | 10s |
+| `MONGODB_POOL_SIZE` | 10 | 10 | 50 |
+
+### Usage Patterns
+
+```typescript
+// Import environment flags
+import { isProduction, isDevelopment, isTest } from './config';
+
+// Conditional logic
+if (isProduction) {
+  validateProductionEnv(); // Throws if missing required vars
+}
+
+// Import specific configs
+import { BCRYPT_ROUNDS, JWT_CONFIG, RATE_LIMIT_CONFIG } from './config/environments';
+
+// Or use unified config object
+import { config } from './config';
+console.log(config.jwt.accessTokenExpiresIn);
+```
+
+### Production Validation
+
+On startup in production, `validateProductionEnv()` ensures:
+- `JWT_SECRET` is set and 32+ characters
+- `MONGODB_URI` is configured
+- `REDIS_HOST` is configured
+
 ## Observability Stack
 
 ### Metrics (Prometheus)
@@ -317,14 +523,73 @@ nodejs_eventloop_lag_seconds
 - Connection pooling
 - Mongoose lean() for read operations
 
+## Load Testing Infrastructure
+
+PayFlow includes a comprehensive k6-based load testing suite for performance validation.
+
+### Load Testing Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    k6 Load Testing Suite                         │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Smoke Tests  │  │ Load Tests   │  │  Stress/Spike Tests  │  │
+│  │ (Health)     │  │ (Normal)     │  │  (Breaking Point)    │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Soak Tests   │  │ User Journey │  │  Report Generation   │  │
+│  │ (Stability)  │  │ (Realistic)  │  │  (HTML/JSON)         │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+           ┌──────────────────┼──────────────────┐
+           ▼                  ▼                  ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│   Docker Local   │ │      VPS         │ │    Staging       │
+│   (localhost)    │ │  (Remote)        │ │  (Pre-prod)      │
+│                  │ │                  │ │                  │
+│  Port 3000       │ │  HTTPS endpoint  │ │  HTTPS endpoint  │
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+```
+
+### Test Types & Metrics
+
+| Test Type | Virtual Users | Duration | Purpose |
+|-----------|---------------|----------|---------|
+| Smoke | 1 | 1 min | Quick health validation |
+| Load | 10-100 | 16 min | Normal traffic simulation |
+| Stress | up to 500 | 22 min | Find system limits |
+| Spike | up to 400 | 15 min | Sudden load handling |
+| Soak | 30 | 1-12 hrs | Memory leak detection |
+
+### Performance Thresholds
+
+| Environment | p95 Response | p99 Response | Error Rate |
+|-------------|--------------|--------------|------------|
+| Local | <2000ms | <5000ms | <5% |
+| Staging | <1000ms | <2000ms | <1% |
+| Production | <500ms | <1000ms | <0.1% |
+
+### CI/CD Integration
+
+Load tests are integrated with GitHub Actions:
+
+- **Automated**: Smoke tests on push/PR
+- **Scheduled**: Load tests daily, soak tests weekly
+- **Manual**: Stress tests on-demand
+
 ## Directory Structure
 
 ```
 src/
 ├── app.ts                 # Express app setup
-├── server.ts              # Server entry point
+├── server.ts              # Server entry point (single process)
+├── cluster.ts             # Cluster entry point (multi-process)
 ├── config/                # Configuration
-│   ├── index.ts          # Environment config
+│   ├── index.ts          # Main config exports
+│   ├── environments.ts   # Environment-specific settings
 │   ├── database.ts       # MongoDB connection
 │   └── redis.ts          # Redis connection
 ├── auth/                  # Authentication module
@@ -342,24 +607,46 @@ src/
 ├── middlewares/           # Express middlewares
 ├── events/                # Event bus (Redis pub/sub)
 ├── queues/                # BullMQ job queues
+├── utils/                 # Utilities
+│   ├── bcrypt.ts         # Worker-based bcrypt API
+│   └── bcryptWorker.ts   # Bcrypt worker thread
 ├── observability/         # Logs, metrics, tracing
 ├── docs/                  # OpenAPI specification
 └── routes/                # Route definitions
+
+scripts/
+├── test-api.sh           # cURL-based API tests (29 endpoints)
+└── run-full-tests.sh     # Orchestrated test runner
+
+load-testing/              # k6 Load Testing Suite
+├── config/                # Environment configurations
+│   ├── environments/     # local, docker, vps, staging, production
+│   ├── api-client.js     # API endpoint client
+│   └── test-utils.js     # Shared test utilities
+├── tests/
+│   ├── smoke/            # Quick health checks
+│   ├── load/             # Standard load tests
+│   ├── stress/           # Breaking point tests
+│   └── soak/             # Long-running stability
+├── scripts/               # Report generation
+└── .github/workflows/     # CI/CD integration
 ```
 
 ## Technology Stack
 
 | Category | Technology |
 |----------|------------|
-| Runtime | Node.js 20 |
+| Runtime | Node.js 20 (Clustered) |
 | Framework | Express.js 5 |
 | Language | TypeScript 5 |
 | Database | MongoDB 7 |
 | Cache/Queue | Redis 7 |
 | Job Queue | BullMQ |
-| Auth | JWT (jsonwebtoken) |
+| Auth | JWT + Worker Bcrypt |
 | Validation | express-validator |
 | Logging | Pino |
 | Metrics | prom-client |
 | Tracing | OpenTelemetry |
 | API Docs | Scalar |
+| Load Testing | k6 |
+| Concurrency | Worker Threads, Cluster |

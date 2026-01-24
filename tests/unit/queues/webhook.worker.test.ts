@@ -59,6 +59,17 @@ jest.mock('../../../src/queues/queue.config', () => ({
   WORKER_CONCURRENCY: { WEBHOOKS: 5 },
 }));
 
+// Mock logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+jest.mock('../../../src/observability', () => ({
+  logger: mockLogger,
+}));
+
 describe('Webhook Worker', () => {
   // Import fresh module for each test
   let startWebhookWorker: typeof import('../../../src/queues/workers/webhook.worker').startWebhookWorker;
@@ -201,7 +212,7 @@ describe('Webhook Worker', () => {
 
   describe('worker event handlers', () => {
     it('should log on job completion', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.info.mockClear();
 
       startWebhookWorker();
 
@@ -214,15 +225,14 @@ describe('Webhook Worker', () => {
       const completedHandler = completedCall[1];
       completedHandler({ id: 'job-123' }, { success: true });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Job job-123 completed')
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job-123', success: true }),
+        'Webhook job completed'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should log on job failure', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
 
       mockWebhookSubscription.findOne.mockResolvedValue({
         webhookId: 'wh_123',
@@ -248,11 +258,10 @@ describe('Webhook Worker', () => {
         new Error('Delivery failed')
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Job job-123 failed')
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ jobId: 'job-123' }),
+        'Webhook job failed'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle null job in failed handler', async () => {
@@ -268,7 +277,7 @@ describe('Webhook Worker', () => {
     });
 
     it('should disable webhook after max failures', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.warn.mockClear();
 
       mockWebhookSubscription.findOne.mockResolvedValue({
         webhookId: 'wh_123',
@@ -298,15 +307,14 @@ describe('Webhook Worker', () => {
         { $set: { isActive: false } }
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Webhook wh_123 disabled')
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ webhookId: 'wh_123' }),
+        'Webhook disabled due to excessive failures'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should log worker errors', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
 
       startWebhookWorker();
 
@@ -315,14 +323,13 @@ describe('Webhook Worker', () => {
       );
       const errorHandler = errorCall[1];
 
-      errorHandler(new Error('Worker crashed'));
+      const testError = new Error('Worker crashed');
+      errorHandler(testError);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[Webhook Worker] Worker error:',
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ err: testError }),
+        'Webhook worker error'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 

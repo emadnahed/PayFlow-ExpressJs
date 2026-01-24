@@ -11,10 +11,13 @@ A production-grade payment backend built with Express.js and the Saga pattern. D
 - **Saga Pattern** - Distributed transaction management with compensating transactions
 - **Event-Driven Architecture** - Redis Pub/Sub for service communication
 - **JWT Authentication** - Secure token-based auth with refresh tokens
+- **Worker-Based Bcrypt** - Non-blocking password hashing using worker threads
+- **Clustering** - Multi-process support for CPU utilization
 - **Rate Limiting** - Redis-backed distributed rate limiting
 - **Idempotency** - Duplicate request prevention
 - **Webhook System** - Event notifications with retry logic
 - **Observability** - Structured logging, Prometheus metrics, OpenTelemetry tracing
+- **Environment Configuration** - Auto-switching settings based on NODE_ENV
 - **API Documentation** - Interactive Scalar API reference
 
 ## Quick Start
@@ -100,39 +103,56 @@ INITIATED → DEBITED → CREDITED → COMPLETED
 
 | Category | Technology |
 |----------|------------|
-| Runtime | Node.js 20 |
+| Runtime | Node.js 20 (Clustered) |
 | Framework | Express.js 5 |
 | Language | TypeScript 5 |
 | Database | MongoDB 7 |
 | Cache/Events | Redis 7 |
 | Queue | BullMQ |
-| Auth | JWT |
+| Auth | JWT + Worker Bcrypt |
 | Logging | Pino |
 | Metrics | Prometheus |
 | Tracing | OpenTelemetry |
 | API Docs | Scalar |
+| Load Testing | k6 |
 
 ## Scripts
 
 ```bash
 # Development
-npm run dev              # Start dev server
+npm run dev              # Start dev server (single process)
+npm run dev:cluster      # Start dev server (clustered)
 npm run build            # Compile TypeScript
 npm start                # Run production build
+npm run start:cluster    # Run production cluster
 
-# Testing
-npm test                 # Run all tests
-npm run test:unit        # Unit tests
+# Testing - Quick Start
+npm run test:unit        # Unit tests only (no infra needed)
+npm run test:run:local   # Full suite with auto infra management
+npm run test:run:docker  # Full suite with Docker infrastructure
+
+# Testing - Manual
+npm test                 # Run all Jest tests
+npm run test:integration # Integration tests
 npm run test:e2e         # E2E tests
 npm run test:coverage    # With coverage report
+npm run test:api:local   # Curl API tests against localhost
 npm run chaos-test       # Chaos testing
-npm run load-test        # Load testing
+
+# Infrastructure Management
+npm run infra:local:up   # Start test MongoDB (27018) + Redis (6380)
+npm run infra:local:down # Stop test infrastructure
+npm run infra:docker:up  # Start full Docker stack
+
+# Load Testing (k6)
+npm run k6:local         # Smoke + load + stress (local)
+npm run k6:docker        # Smoke + load + stress (docker)
+npm run k6:vps           # Smoke + load + stress (VPS)
 
 # Code Quality
 npm run lint             # Run ESLint
 npm run lint:fix         # Fix linting issues
 npm run format           # Format with Prettier
-npm run format:check     # Check formatting
 
 # Docker
 npm run docker:up        # Start dev stack
@@ -146,8 +166,11 @@ npm run docker:prod:scale # Scale to 3 instances
 ```
 src/
 ├── app.ts              # Express app setup
-├── server.ts           # Entry point
+├── server.ts           # Entry point (single process)
+├── cluster.ts          # Cluster entry point (multi-process)
 ├── config/             # Configuration
+│   ├── environments.ts # Environment-specific settings
+│   └── index.ts        # Main config exports
 ├── auth/               # Authentication module
 ├── services/           # Business services
 │   ├── wallet/         # Wallet operations
@@ -158,59 +181,117 @@ src/
 ├── middlewares/        # Express middlewares
 ├── events/             # Redis event bus
 ├── queues/             # BullMQ job queues
+├── utils/              # Utilities
+│   ├── bcrypt.ts       # Worker-based bcrypt
+│   └── bcryptWorker.ts # Bcrypt worker thread
 ├── observability/      # Logging, metrics, tracing
 └── docs/               # OpenAPI specification
 
 tests/
-├── unit/               # Unit tests
-├── integration/        # Integration tests
-├── e2e/                # End-to-end tests
+├── unit/               # Unit tests (428)
+├── integration/        # Integration tests (214)
+├── e2e/                # End-to-end tests (212)
 ├── chaos/              # Failure scenario tests
 └── load/               # Performance tests
+
+scripts/
+├── test-api.sh         # cURL-based API tests
+└── run-full-tests.sh   # Orchestrated test runner
+
+load-testing/           # k6 Load Testing Suite
+├── config/             # Environment configurations
+├── tests/              # Test scenarios
+│   ├── smoke/          # Quick health checks
+│   ├── load/           # Standard load tests
+│   ├── stress/         # Breaking point tests
+│   └── soak/           # Long-running stability
+├── scripts/            # Report generation
+└── .github/workflows/  # CI/CD integration
 ```
 
-## Environment Variables
+## Environment Configuration
+
+The app automatically adjusts settings based on `NODE_ENV`:
+
+| Setting | Development | Test | Production |
+|---------|-------------|------|------------|
+| Bcrypt Rounds | 10 | 4 | 12 |
+| Global Rate Limit | 1000 req/15min | 10000 | 100 |
+| Auth Rate Limit | 100 req/15min | 10000 | 5 |
+| Log Level | debug | error | info |
+| JWT Access Token | 1h | 1h | 15m |
+
+```bash
+# Setup
+cp .env.example .env    # Copy template
+# Edit .env with your values
+
+# Run different environments
+NODE_ENV=development npm run dev
+NODE_ENV=test npm test
+NODE_ENV=production npm start
+```
+
+### Key Environment Variables
 
 ```env
-NODE_ENV=development
+NODE_ENV=development          # development | test | production
 PORT=3000
 
-# MongoDB
+# Database
 MONGODB_URI=mongodb://localhost:27017/payflow
-
-# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# JWT
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=1h
+# Authentication
+JWT_SECRET=your-secret-key    # Min 32 chars in production
+BCRYPT_ROUNDS=10              # 4 (test), 10 (dev), 12 (prod)
+
+# Rate Limiting
+RATE_LIMIT_DISABLED=false     # Set true to disable all rate limits
+LOAD_TEST_SECRET=             # Secret for X-Load-Test-Token bypass header
+
+# See .env.example for complete reference
 ```
 
 ## Documentation
 
 - [API Reference](docs/API.md) - Complete API documentation
 - [Architecture](docs/ARCHITECTURE.md) - System design and patterns
+- [Testing Guide](docs/TESTING.md) - Comprehensive testing documentation
 - [Deployment](docs/DEPLOYMENT.md) - Production deployment guide
+- [Performance Report](docs/PERFORMANCE-OPTIMIZATION-REPORT.md) - Load testing results and optimizations
 - [Contributing](docs/CONTRIBUTING.md) - Contribution guidelines
 
 ## Testing
 
 The project includes comprehensive test coverage:
 
-- **Unit Tests** - Service logic isolation
-- **Integration Tests** - Service interactions
-- **E2E Tests** - Full API flow testing
-- **Chaos Tests** - Failure scenario validation
-- **Load Tests** - Performance benchmarking
+| Category | Tests | Description |
+|----------|-------|-------------|
+| **Unit Tests** | 428 | Service logic isolation with mocks |
+| **Integration Tests** | 214 | Service interactions with real DB |
+| **E2E Tests** | 212 | Full HTTP API flow testing |
+| **cURL API Tests** | 29 | Shell-based endpoint testing |
+| **Total** | **883+** | All environments supported |
 
 ```bash
-# Run full test suite
-npm run test:ci
+# Easiest: Full orchestrated test suite
+npm run test:run:local       # Handles infra, API, tests, cleanup
+
+# Manual control
+npm run infra:local:up       # Start test MongoDB + Redis
+npm run test:unit            # Unit tests (no infra needed)
+npm run test:jest:local      # Unit + Integration + E2E
+npm run test:api:local       # cURL API tests
+npm run k6:local             # k6 load tests
+npm run infra:local:down     # Cleanup
 
 # View coverage report
 open coverage/lcov-report/index.html
 ```
+
+See [docs/TESTING.md](docs/TESTING.md) for detailed testing documentation and [load-testing/README.md](load-testing/README.md) for k6 load testing.
 
 ## Production Deployment
 

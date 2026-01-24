@@ -448,9 +448,9 @@ describe('Auth Endpoints', () => {
       const accessPayload = jwt.decode(accessToken) as any;
       const refreshPayload = jwt.decode(refreshToken) as any;
 
-      // Access token: 15 minutes
+      // Access token: 1 hour (test/dev default)
       const accessExpiry = accessPayload.exp - accessPayload.iat;
-      expect(accessExpiry).toBe(15 * 60);
+      expect(accessExpiry).toBe(60 * 60);
 
       // Refresh token: 7 days
       const refreshExpiry = refreshPayload.exp - refreshPayload.iat;
