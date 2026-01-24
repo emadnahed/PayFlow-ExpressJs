@@ -216,11 +216,57 @@ TEST_USER_PASSWORD=LoadTest123!
 TEST_USER_2_EMAIL=loadtest2@example.com
 TEST_USER_2_PASSWORD=LoadTest123!
 
+# Rate Limit Bypass (required for staging/production)
+LOAD_TEST_TOKEN=your-secret-token
+
 # Performance Thresholds
 THRESHOLD_P95_RESPONSE_TIME=1000
 THRESHOLD_P99_RESPONSE_TIME=2000
 THRESHOLD_ERROR_RATE=0.01
 ```
+
+## Rate Limit Bypass
+
+PayFlow uses rate limiting to protect against abuse. During load testing, requests can hit rate limits and cause false failures. The test suite supports automatic rate limit bypass via the `X-Load-Test-Token` header.
+
+### How It Works
+
+1. Each environment config has a `loadTestToken` setting
+2. If configured, the token is automatically added to all requests via `X-Load-Test-Token` header
+3. The server validates this token against its `LOAD_TEST_SECRET` environment variable
+4. Valid tokens bypass all rate limiters
+
+### Configuration by Environment
+
+| Environment | Default Behavior |
+|-------------|------------------|
+| `local` | Auto bypass with `test-load-secret` |
+| `docker-local` | Auto bypass with `test-load-secret` |
+| `vps` | Requires `LOAD_TEST_TOKEN` env var |
+| `staging` | Requires `LOAD_TEST_TOKEN` env var |
+| `production` | Requires `LOAD_TEST_TOKEN` env var |
+
+### Using Load Test Token
+
+```bash
+# Local environments (auto-configured)
+npm run test:smoke:local
+npm run test:smoke:docker
+
+# Remote environments (requires token)
+k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+
+# Or set via environment variable
+export LOAD_TEST_TOKEN=your-secret
+npm run test:smoke:vps
+```
+
+### Security Notes
+
+- **Never commit tokens** to version control
+- **Use strong secrets** (32+ characters) for production
+- **Rotate tokens** regularly
+- **Server must have matching `LOAD_TEST_SECRET`** environment variable set
 
 ## Project Structure
 
@@ -232,12 +278,14 @@ load-testing/
 │       └── scheduled-tests.yml   # Scheduled performance tests
 ├── config/
 │   ├── environments/
-│   │   ├── local.js              # Local environment config
-│   │   ├── staging.js            # Staging environment config
-│   │   └── production.js         # Production environment config
+│   │   ├── local.js              # Local dev environment (port 3000)
+│   │   ├── docker-local.js       # Docker on localhost (port 3001)
+│   │   ├── vps.js                # Docker on remote VPS
+│   │   ├── staging.js            # Staging environment
+│   │   └── production.js         # Production environment
 │   ├── index.js                  # Config loader
 │   ├── api-client.js             # API client for all endpoints
-│   └── test-utils.js             # Shared test utilities
+│   └── test-utils.js             # Shared test utilities (includes rate limit bypass)
 ├── tests/
 │   ├── smoke/
 │   │   ├── smoke.test.js         # Full smoke test suite
@@ -400,6 +448,7 @@ The load testing suite includes two workflows:
 Configure these secrets in your GitHub repository:
 
 - `STAGING_API_URL` - Staging environment URL
+- `LOAD_TEST_TOKEN` - Token for bypassing rate limits (must match server's `LOAD_TEST_SECRET`)
 - `SLACK_WEBHOOK_URL` - (Optional) For notifications
 - `TEST_USER_EMAIL` - Test user email
 - `TEST_USER_PASSWORD` - Test user password
@@ -434,12 +483,19 @@ The test suite tracks custom metrics:
 **Authentication failures:**
 - Ensure test users exist in the target environment
 - Verify API_URL is correct
-- Check if rate limiting is blocking requests
+- Check if rate limiting is blocking requests (see below)
+
+**Rate limit errors (429 status):**
+- For local/docker: Ensure server is running with `NODE_ENV=test`
+- For VPS/staging/production: Set `LOAD_TEST_TOKEN` environment variable
+- Verify server has matching `LOAD_TEST_SECRET` configured
+- Check that `loadTestToken` is set in the environment config
 
 **High error rates:**
 - Check if the server is running
 - Verify database connections
 - Review server logs for errors
+- Ensure rate limit bypass is properly configured
 
 **Timeout errors:**
 - Increase timeout thresholds for slow environments

@@ -35,6 +35,20 @@ const transactionCount = new Counter('transactions');
 
 // Test configuration
 const config = getConfig();
+const envThresholds = getThresholds();
+
+// Default thresholds (used if environment doesn't specify)
+const defaultThresholds = {
+  http_req_duration: ['p(95)<1000', 'p(99)<2000'],
+  http_req_failed: ['rate<0.01'],
+  errors: ['rate<0.01'],
+  auth_latency: ['p(95)<500'],
+  wallet_latency: ['p(95)<800'],
+  transaction_latency: ['p(95)<1000'],
+};
+
+// Merge environment thresholds with defaults (env takes precedence)
+const thresholds = { ...defaultThresholds, ...envThresholds };
 
 export const options = {
   // Stages for ramping up and down
@@ -46,14 +60,7 @@ export const options = {
     { duration: '3m', target: 100 }, // Stay at 100 users
     { duration: '2m', target: 0 },   // Ramp down to 0
   ],
-  thresholds: {
-    http_req_duration: ['p(95)<1000', 'p(99)<2000'],
-    http_req_failed: ['rate<0.01'],
-    errors: ['rate<0.01'],
-    auth_latency: ['p(95)<500'],
-    wallet_latency: ['p(95)<800'],
-    transaction_latency: ['p(95)<1000'],
-  },
+  thresholds,
   tags: {
     testType: 'load',
   },

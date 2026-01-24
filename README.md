@@ -216,7 +216,8 @@ The app automatically adjusts settings based on `NODE_ENV`:
 | Setting | Development | Test | Production |
 |---------|-------------|------|------------|
 | Bcrypt Rounds | 10 | 4 | 12 |
-| Rate Limit | 1000 req/15min | 10000 | 100 |
+| Global Rate Limit | 1000 req/15min | 10000 | 100 |
+| Auth Rate Limit | 100 req/15min | 10000 | 5 |
 | Log Level | debug | error | info |
 | JWT Access Token | 1h | 1h | 15m |
 
@@ -245,6 +246,10 @@ REDIS_PORT=6379
 # Authentication
 JWT_SECRET=your-secret-key    # Min 32 chars in production
 BCRYPT_ROUNDS=10              # 4 (test), 10 (dev), 12 (prod)
+
+# Rate Limiting
+RATE_LIMIT_DISABLED=false     # Set true to disable all rate limits
+LOAD_TEST_SECRET=             # Secret for X-Load-Test-Token bypass header
 
 # See .env.example for complete reference
 ```

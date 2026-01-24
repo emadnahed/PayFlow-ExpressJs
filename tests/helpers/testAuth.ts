@@ -21,6 +21,29 @@ export interface TestUser {
   refreshToken: string;
 }
 
+/**
+ * Helper to retry an async operation with exponential backoff
+ */
+const withRetry = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 500
+): Promise<T> => {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+};
+
 export const createTestUser = async (
   app: Application,
   overrides: Partial<{ name: string; email: string; password: string }> = {}
@@ -32,21 +55,24 @@ export const createTestUser = async (
     ...overrides,
   };
 
-  const response = await request(app).post('/auth/register').send(defaultUser);
+  // Use retry logic for Docker environments where API may need warm-up time
+  return withRetry(async () => {
+    const response = await request(app).post('/auth/register').send(defaultUser);
 
-  if (response.status !== 201) {
-    throw new Error(`Failed to create test user: ${JSON.stringify(response.body)}`);
-  }
+    if (response.status !== 201) {
+      throw new Error(`Failed to create test user: ${JSON.stringify(response.body)}`);
+    }
 
-  return {
-    user: {
-      userId: response.body.data.user.userId,
-      name: response.body.data.user.name,
-      email: response.body.data.user.email,
-    },
-    accessToken: response.body.data.tokens.accessToken,
-    refreshToken: response.body.data.tokens.refreshToken,
-  };
+    return {
+      user: {
+        userId: response.body.data.user.userId,
+        name: response.body.data.user.name,
+        email: response.body.data.user.email,
+      },
+      accessToken: response.body.data.tokens.accessToken,
+      refreshToken: response.body.data.tokens.refreshToken,
+    };
+  }, 3, 1000);
 };
 
 export const getAuthToken = async (
