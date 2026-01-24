@@ -106,8 +106,9 @@ wait_for_mongodb() {
 
   echo -n "  Waiting for MongoDB ($host:$port)"
   while [ $attempt -le $max_attempts ]; do
-    # Check if MongoDB is accepting connections
-    if docker exec payflow-mongodb-test mongosh --eval "db.adminCommand('ping')" --quiet 2>/dev/null | grep -q "ok"; then
+    # Check if MongoDB is accepting connections using docker-compose exec with service name
+    # This is more robust than docker exec with container names
+    if docker-compose -f docker/docker-compose.test.yml exec -T mongodb-test mongosh --eval "db.adminCommand('ping')" --quiet 2>/dev/null | grep -q "ok"; then
       echo -e " ${GREEN}ready${NC}"
       return 0
     fi
@@ -127,7 +128,8 @@ wait_for_redis() {
 
   echo -n "  Waiting for Redis ($host:$port)"
   while [ $attempt -le $max_attempts ]; do
-    if docker exec payflow-redis-test redis-cli ping 2>/dev/null | grep -q "PONG"; then
+    # Use docker-compose exec with service name for better robustness
+    if docker-compose -f docker/docker-compose.test.yml exec -T redis-test redis-cli ping 2>/dev/null | grep -q "PONG"; then
       echo -e " ${GREEN}ready${NC}"
       return 0
     fi
