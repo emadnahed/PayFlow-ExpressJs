@@ -65,12 +65,16 @@
     "k6:staging": "cd load-testing && npm run test:full:staging",
     "k6:production": "cd load-testing && npm run test:full:production",
 
-    "infra:local:up": "docker-compose -f docker/docker-compose.test.yml up -d mongodb-test redis-test && echo 'Waiting for services...' && sleep 5",
+    "infra:local:up": "docker-compose -f docker/docker-compose.test.yml up -d mongodb-test redis-test && echo 'Waiting for containers to initialize...' && sleep 3",
     "infra:local:down": "docker-compose -f docker/docker-compose.test.yml down",
     "infra:local:status": "docker-compose -f docker/docker-compose.test.yml ps",
     "infra:docker:up": "docker-compose -f docker/docker-compose.yml up -d",
     "infra:docker:down": "docker-compose -f docker/docker-compose.yml down",
     "infra:docker:status": "docker-compose -f docker/docker-compose.yml ps",
+
+    "cleanup:local": "pkill -f 'ts-node src/server' || true; pkill -f 'node dist/server' || true; pkill -f nodemon || true; docker-compose -f docker/docker-compose.test.yml down 2>/dev/null || true; echo 'Local environment cleaned up'",
+    "cleanup:docker": "docker-compose -f docker/docker-compose.yml down 2>/dev/null || true; docker-compose -f docker/docker-compose.test.yml down 2>/dev/null || true; echo 'Docker environment cleaned up'",
+    "cleanup:all": "pkill -f 'ts-node src/server' || true; pkill -f 'node dist/server' || true; pkill -f nodemon || true; pkill -f 'k6 run' || true; docker-compose -f docker/docker-compose.yml down 2>/dev/null || true; docker-compose -f docker/docker-compose.test.yml down 2>/dev/null || true; echo 'All environments cleaned up'",
 
     "test:full:local": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:api:local && npm run k6:local",
     "test:full:docker": "npm run test:unit && REDIS_PORT=6380 npm run test:integration && npm run test:e2e:docker && npm run test:api:docker && npm run k6:docker",

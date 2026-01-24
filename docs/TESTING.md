@@ -257,6 +257,79 @@ npm test -- tests/e2e/auth.test.ts
 
 ---
 
+## Rate Limiting and Load Testing
+
+PayFlow uses environment-based rate limiting configuration that adjusts thresholds based on `NODE_ENV`. This ensures load tests can run without hitting rate limits while maintaining strict limits in production.
+
+### Rate Limit Configuration by Environment
+
+| Limiter | Development | Test | Production |
+|---------|-------------|------|------------|
+| Global | 1000 req/15min | 10000 | 100 |
+| Auth | 100 req/15min | 10000 | 5 |
+| Transaction | 200 req/15min | 10000 | 50 |
+| API | 500 req/15min | 10000 | 100 |
+| Webhook | 200 req/15min | 10000 | 50 |
+
+### Load Test Bypass Header
+
+For scenarios where you need to bypass rate limiting (e.g., load testing against staging or production), PayFlow supports a bypass header mechanism:
+
+```bash
+# Set the LOAD_TEST_SECRET environment variable on the server
+LOAD_TEST_SECRET=your-secret-token
+
+# Pass the token in requests via X-Load-Test-Token header
+curl -H "X-Load-Test-Token: your-secret-token" http://localhost:3000/health
+```
+
+**Security Notes:**
+- The bypass header only works when `LOAD_TEST_SECRET` is set on the server
+- In test mode, the default secret is `test-load-secret`
+- For production, use a strong, unique secret and rotate it regularly
+- Never commit secrets to version control
+
+### K6 Environment Configuration
+
+Each k6 environment configuration includes a `loadTestToken` setting:
+
+| Environment | Default Token | Base URL |
+|-------------|---------------|----------|
+| local | `test-load-secret` | `http://localhost:3000` |
+| docker-local | `test-load-secret` | `http://localhost:3001` |
+| vps | *(env var required)* | `https://api.yourdomain.com` |
+| staging | *(env var required)* | `https://staging-api.example.com` |
+| production | *(env var required)* | `https://api.example.com` |
+
+### Running Load Tests with Custom Token
+
+```bash
+# Local/Docker (uses default test secret)
+npm run k6:local
+npm run k6:docker
+
+# VPS/Staging/Production (pass token via environment variable)
+k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+
+# Or set environment variables before running
+export API_URL=https://api.yourdomain.com
+export LOAD_TEST_TOKEN=your-secret
+npm run k6:vps
+```
+
+### Disabling Rate Limiting
+
+For development/debugging, you can completely disable rate limiting:
+
+```bash
+# Disable all rate limiters
+RATE_LIMIT_DISABLED=true npm run dev
+```
+
+**Warning:** Never disable rate limiting in production environments.
+
+---
+
 ## Infrastructure Setup
 
 ### Option 1: Docker Test Environment (Recommended)
@@ -970,21 +1043,34 @@ k6 run -e ENV=vps -e API_URL=https://your-vps.com tests/smoke/smoke.test.js
 
 ### Environment Configuration
 
-The load testing suite supports multiple environments:
+The load testing suite supports multiple environments with automatic rate limit bypass:
+
+| Environment | API URL | Rate Limit Bypass |
+|-------------|---------|-------------------|
+| `local` | `http://localhost:3000` | Auto (test-load-secret) |
+| `docker-local` | `http://localhost:3001` | Auto (test-load-secret) |
+| `vps` | Set via `API_URL` env | Requires `LOAD_TEST_TOKEN` |
+| `staging` | Set via `API_URL` env | Requires `LOAD_TEST_TOKEN` |
+| `production` | Set via `API_URL` env | Requires `LOAD_TEST_TOKEN` |
 
 ```bash
-# Local development (non-Docker)
+# Local development (non-Docker) - auto bypasses rate limits
 k6 run -e ENV=local tests/smoke/smoke.test.js
 
-# Docker containers on localhost
+# Docker containers on localhost - auto bypasses rate limits
 k6 run -e ENV=docker-local tests/smoke/smoke.test.js
 
-# Docker containers on VPS
-k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com tests/smoke/smoke.test.js
+# VPS/Remote - requires load test token for rate limit bypass
+k6 run -e ENV=vps -e API_URL=https://api.yourdomain.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
 
-# Staging environment
-k6 run -e ENV=staging tests/smoke/smoke.test.js
+# Staging environment - requires load test token
+k6 run -e ENV=staging -e API_URL=https://staging.example.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
+
+# Production (use with caution!) - requires load test token
+k6 run -e ENV=production -e API_URL=https://api.example.com -e LOAD_TEST_TOKEN=your-secret tests/smoke/smoke.test.js
 ```
+
+**Note:** The `X-Load-Test-Token` header is automatically added to all k6 requests when `loadTestToken` is configured. See [Rate Limiting and Load Testing](#rate-limiting-and-load-testing) for details.
 
 ### Performance Thresholds
 

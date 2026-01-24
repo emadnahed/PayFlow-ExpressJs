@@ -3,13 +3,23 @@
  *
  * Provides rate limiting for API endpoints using Redis store
  * to ensure distributed rate limiting across multiple instances.
+ *
+ * Environment-based configuration:
+ * - Production: Strict limits to prevent abuse
+ * - Development: Relaxed limits for easier testing
+ * - Test: Very lenient limits for automated tests
+ *
+ * Load testing:
+ * - Set RATE_LIMIT_DISABLED=true to disable all rate limiting
+ * - Or configure individual limits via environment variables
  */
 
-import { Request } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 
 import { config } from '../config';
+import { RATE_LIMIT_CONFIG } from '../config/environments';
 import { getRedisClient } from '../config/redis';
 import { logger } from '../observability';
 import { ErrorCode } from '../types/errors';
@@ -47,13 +57,48 @@ const createStore = () => {
 };
 
 /**
- * Global rate limiter
- * Applied to all routes, 100 requests per 15 minutes
+ * No-op middleware that passes through (used when rate limiting is disabled)
  */
-export const globalLimiter: RateLimitRequestHandler = rateLimit({
+const noopLimiter = (_req: Request, _res: Response, next: NextFunction) => next();
+
+/**
+ * Check if request has valid load test bypass header
+ */
+const hasValidBypassHeader = (req: Request): boolean => {
+  if (!RATE_LIMIT_CONFIG.loadTestSecret) return false;
+  const token = req.get('X-Load-Test-Token');
+  return token === RATE_LIMIT_CONFIG.loadTestSecret;
+};
+
+/**
+ * Wrap rate limiter to support:
+ * - Global disable flag (RATE_LIMIT_DISABLED=true)
+ * - Load test bypass header (X-Load-Test-Token)
+ */
+const createLimiter = (limiter: RateLimitRequestHandler): RateLimitRequestHandler => {
+  if (RATE_LIMIT_CONFIG.disabled) {
+    logger.warn('Rate limiting is DISABLED via RATE_LIMIT_DISABLED=true');
+    return noopLimiter as unknown as RateLimitRequestHandler;
+  }
+
+  // Return a wrapper that checks for bypass header
+  return ((req: Request, res: Response, next: NextFunction) => {
+    if (hasValidBypassHeader(req)) {
+      return next();
+    }
+    return limiter(req, res, next);
+  }) as unknown as RateLimitRequestHandler;
+};
+
+/**
+ * Global rate limiter
+ * Applied to all routes
+ * Configurable via RATE_LIMIT_WINDOW_MS and RATE_LIMIT_MAX_REQUESTS
+ */
+export const globalLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
   store: createStore(),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  windowMs: RATE_LIMIT_CONFIG.global.windowMs,
+  max: RATE_LIMIT_CONFIG.global.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -68,16 +113,17 @@ export const globalLimiter: RateLimitRequestHandler = rateLimit({
     // Skip rate limiting for health checks and metrics
     return req.path === '/health' || req.path === '/health/live' || req.path === '/metrics';
   },
-});
+}));
 
 /**
  * Strict rate limiter for authentication endpoints
- * 5 attempts per 15 minutes to prevent brute force attacks
+ * Prevents brute force attacks in production
+ * Configurable via AUTH_RATE_LIMIT_WINDOW_MS and AUTH_RATE_LIMIT_MAX
  */
-export const authLimiter: RateLimitRequestHandler = rateLimit({
+export const authLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
   store: createStore(),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
+  windowMs: RATE_LIMIT_CONFIG.auth.windowMs,
+  max: RATE_LIMIT_CONFIG.auth.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -94,16 +140,17 @@ export const authLimiter: RateLimitRequestHandler = rateLimit({
     return `${req.ip}:${email}`;
   },
   validate: false,
-});
+}));
 
 /**
  * Transaction rate limiter
- * 10 transactions per minute per user to prevent abuse
+ * Prevents transaction abuse
+ * Configurable via TX_RATE_LIMIT_WINDOW_MS and TX_RATE_LIMIT_MAX
  */
-export const transactionLimiter: RateLimitRequestHandler = rateLimit({
+export const transactionLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
   store: createStore(),
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 transactions per minute
+  windowMs: RATE_LIMIT_CONFIG.transaction.windowMs,
+  max: RATE_LIMIT_CONFIG.transaction.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -119,16 +166,16 @@ export const transactionLimiter: RateLimitRequestHandler = rateLimit({
     return req.user?.userId || req.ip || 'unknown';
   },
   validate: false,
-});
+}));
 
 /**
  * API rate limiter for general API calls
- * 30 requests per minute per user
+ * Configurable via API_RATE_LIMIT_WINDOW_MS and API_RATE_LIMIT_MAX
  */
-export const apiLimiter: RateLimitRequestHandler = rateLimit({
+export const apiLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
   store: createStore(),
-  windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute
+  windowMs: RATE_LIMIT_CONFIG.api.windowMs,
+  max: RATE_LIMIT_CONFIG.api.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -143,16 +190,16 @@ export const apiLimiter: RateLimitRequestHandler = rateLimit({
     return req.user?.userId || req.ip || 'unknown';
   },
   validate: false,
-});
+}));
 
 /**
  * Webhook registration rate limiter
- * 10 webhook registrations per hour per user
+ * Configurable via WEBHOOK_RATE_LIMIT_WINDOW_MS and WEBHOOK_RATE_LIMIT_MAX
  */
-export const webhookLimiter: RateLimitRequestHandler = rateLimit({
+export const webhookLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
   store: createStore(),
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 registrations per hour
+  windowMs: RATE_LIMIT_CONFIG.webhook.windowMs,
+  max: RATE_LIMIT_CONFIG.webhook.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -167,4 +214,4 @@ export const webhookLimiter: RateLimitRequestHandler = rateLimit({
     return `webhook:${req.user?.userId || req.ip || 'unknown'}`;
   },
   validate: false,
-});
+}));

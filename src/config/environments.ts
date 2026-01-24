@@ -169,14 +169,78 @@ export const BCRYPT_ROUNDS = isProduction
 
 /**
  * Rate limiting configuration by environment
+ *
+ * In test/development environments, rate limits are significantly relaxed
+ * to allow load testing without hitting artificial limits.
+ *
+ * For load testing in production-like environments:
+ *   - Set RATE_LIMIT_DISABLED=true to disable all rate limiting (NOT recommended for production)
+ *   - Set LOAD_TEST_SECRET to enable bypass via X-Load-Test-Token header
+ *   - Or configure individual limits via environment variables
+ *
+ * Load Test Bypass Header:
+ *   When LOAD_TEST_SECRET is set, requests with header X-Load-Test-Token matching
+ *   the secret will bypass rate limiting. Use this for load testing staging/production.
+ *   Example: curl -H "X-Load-Test-Token: your-secret" https://api.example.com/health
  */
 export const RATE_LIMIT_CONFIG = {
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
-  maxRequests: isProduction
-    ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
-    : isTest
-    ? 10000 // Very lenient for tests
-    : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10), // More lenient in dev
+  // Global disable flag for load testing (use with caution!)
+  disabled: process.env.RATE_LIMIT_DISABLED === 'true' || false,
+
+  // Load test bypass secret (set this to enable bypass header)
+  // When set, requests with X-Load-Test-Token: <secret> bypass rate limits
+  loadTestSecret: process.env.LOAD_TEST_SECRET || (isTest ? 'test-load-secret' : ''),
+
+  // Global rate limiter (all routes)
+  global: {
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
+    maxRequests: isProduction
+      ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
+      : isTest
+      ? 10000 // Very lenient for tests
+      : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10),
+  },
+
+  // Auth rate limiter (login, register)
+  auth: {
+    windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
+    maxRequests: isProduction
+      ? parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5', 10) // Strict in production
+      : isTest
+      ? 10000 // Very lenient for tests
+      : parseInt(process.env.AUTH_RATE_LIMIT_MAX || '100', 10), // Lenient in dev
+  },
+
+  // Transaction rate limiter
+  transaction: {
+    windowMs: parseInt(process.env.TX_RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 minute
+    maxRequests: isProduction
+      ? parseInt(process.env.TX_RATE_LIMIT_MAX || '10', 10)
+      : isTest
+      ? 10000
+      : parseInt(process.env.TX_RATE_LIMIT_MAX || '100', 10),
+  },
+
+  // API rate limiter (general API calls)
+  api: {
+    windowMs: parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 minute
+    maxRequests: isProduction
+      ? parseInt(process.env.API_RATE_LIMIT_MAX || '30', 10)
+      : isTest
+      ? 10000
+      : parseInt(process.env.API_RATE_LIMIT_MAX || '300', 10),
+  },
+
+  // Webhook rate limiter
+  webhook: {
+    windowMs: parseInt(process.env.WEBHOOK_RATE_LIMIT_WINDOW_MS || '3600000', 10), // 1 hour
+    maxRequests: isProduction
+      ? parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '10', 10)
+      : isTest
+      ? 10000
+      : parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '100', 10),
+  },
+
   skipFailedRequests: !isProduction,
 };
 

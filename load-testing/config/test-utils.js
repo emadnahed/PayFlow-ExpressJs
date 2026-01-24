@@ -23,12 +23,20 @@ let currentWalletId = null;
 
 /**
  * Get default headers for API requests
+ * Includes load test bypass token if configured (bypasses rate limiting)
  */
 export function getHeaders(withAuth = false) {
+  const config = getConfig();
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
+
+  // Add load test bypass header if token is configured
+  // This bypasses rate limiting on the server
+  if (config.loadTestToken) {
+    headers['X-Load-Test-Token'] = config.loadTestToken;
+  }
 
   if (withAuth && authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;

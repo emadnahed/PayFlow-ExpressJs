@@ -7,6 +7,10 @@ export const config = {
   // (docker-compose.test.yml maps 3001:3000)
   baseUrl: __ENV.API_URL || 'http://localhost:3001',
 
+  // Load test bypass token (matches LOAD_TEST_SECRET on server)
+  // Docker test container uses test settings which default to 'test-load-secret'
+  loadTestToken: __ENV.LOAD_TEST_TOKEN || 'test-load-secret',
+
   // Test user credentials
   testUser: {
     email: __ENV.TEST_USER_EMAIL || 'loadtest@example.com',
@@ -20,10 +24,17 @@ export const config = {
   },
 
   // Performance thresholds (lenient for local Docker)
+  // Docker adds overhead, so we use relaxed thresholds
   thresholds: {
-    http_req_duration: ['p(95)<2000', 'p(99)<5000'],
+    // HTTP metrics (relaxed for Docker overhead)
+    http_req_duration: ['p(95)<3000', 'p(99)<6000'],
     http_req_failed: ['rate<0.05'],
-    http_reqs: ['rate>10'],
+    http_reqs: ['rate>5'],
+    // Custom metrics (relaxed for local Docker environment)
+    errors: ['rate<0.05'],
+    auth_latency: ['p(95)<3000'],
+    wallet_latency: ['p(95)<2500'],
+    transaction_latency: ['p(95)<2000'],
   },
 
   // Default test options (conservative for local resources)
