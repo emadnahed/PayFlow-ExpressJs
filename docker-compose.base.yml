@@ -1,0 +1,76 @@
+# ================================================
+# PayFlow — Shared Service Definitions (Base Layer)
+# ================================================
+# No ports, no container names, no env_file.
+# Override with docker-compose.prod.yml or docker-compose.staging.yml
+#
+# Usage:
+#   docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#   docker compose -f docker-compose.base.yml -f docker-compose.staging.yml --env-file .env.staging up -d --build
+
+services:
+  # ================================
+  # PayFlow API
+  # ================================
+  api:
+    build: .
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health/live', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ================================
+  # MongoDB (Standalone)
+  # ================================
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ================================
+  # Redis
+  # ================================
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo_data:
+  redis_data:

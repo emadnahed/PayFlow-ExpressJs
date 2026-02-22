@@ -51,6 +51,13 @@
     "docker:prod:down": "docker-compose -f docker/docker-compose.prod.yml down",
     "docker:prod:scale": "docker-compose -f docker/docker-compose.prod.yml up -d --scale api=3",
 
+    "deploy:prod:up": "docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build",
+    "deploy:prod:down": "docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.prod down",
+    "deploy:prod:logs": "docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.prod logs -f",
+    "deploy:staging:up": "docker compose -f docker-compose.base.yml -f docker-compose.staging.yml --env-file .env.staging up -d --build",
+    "deploy:staging:down": "docker compose -f docker-compose.base.yml -f docker-compose.staging.yml --env-file .env.staging down",
+    "deploy:staging:logs": "docker compose -f docker-compose.base.yml -f docker-compose.staging.yml --env-file .env.staging logs -f",
+
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",

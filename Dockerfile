@@ -66,10 +66,10 @@ ENV PORT=3000
 # ================================
 # Node.js Tuning for I/O-bound workloads
 # ================================
-# UV_THREADPOOL_SIZE: Increase async I/O threads (default: 4)
+# UV_THREADPOOL_SIZE: Async I/O threads (default: 4)
 # - MongoDB, Redis, file operations use libuv thread pool
-# - 8 threads optimal for I/O-heavy payment processing
-ENV UV_THREADPOOL_SIZE=8
+# - 4 threads sufficient for single-worker deployment
+ENV UV_THREADPOOL_SIZE=4
 
 # Node.js memory and GC options passed via CMD
 # --max-old-space-size=256: Limit V8 heap to 256MB (leaves room for other memory)
