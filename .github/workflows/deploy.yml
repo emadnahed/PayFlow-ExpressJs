@@ -11,6 +11,7 @@ jobs:
     name: Deploy Production
     runs-on: ubuntu-latest
     if: >
+      secrets.VPS_HOST != '' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
     environment: production
@@ -37,6 +38,7 @@ jobs:
     name: Deploy Staging
     runs-on: ubuntu-latest
     if: >
+      secrets.VPS_HOST != '' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'staging'
     environment: staging
