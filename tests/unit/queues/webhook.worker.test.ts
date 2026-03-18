@@ -333,21 +333,159 @@ describe('Webhook Worker', () => {
     });
   });
 
-  describe('processWebhookJob', () => {
-    // Note: processWebhookJob is an internal function, but we can test
-    // its behavior indirectly through the worker or by testing helper functions
+  describe('processWebhookJob (via Worker processor)', () => {
+    function getProcessorFn() {
+      startWebhookWorker();
+      const WorkerMock = jest.requireMock('bullmq').Worker;
+      // processWebhookJob is the second argument passed to new Worker(...)
+      return WorkerMock.mock.calls[0][1] as (job: Record<string, unknown>) => Promise<unknown>;
+    }
 
-    it('should handle webhook not found scenario', async () => {
+    const fakeJob = {
+      id: 'job-1',
+      data: {
+        webhookId: 'wh_1',
+        deliveryId: 'd_1',
+        payload: { event: 'transaction.completed', transactionId: 'txn_1' },
+      },
+      attemptsMade: 0,
+      opts: { attempts: 3 },
+    };
+
+    it('should return failure result when subscription not found', async () => {
       mockWebhookSubscription.findOne.mockResolvedValue(null);
+      const processor = getProcessorFn();
 
-      // The worker would call processWebhookJob internally
-      // We can verify the model was queried
-      const result = await mockWebhookSubscription.findOne({
-        webhookId: 'wh_nonexistent',
+      const result = await processor(fakeJob);
+
+      expect(result).toMatchObject({ success: false });
+      expect(mockWebhookDelivery.updateOne).toHaveBeenCalledWith(
+        { deliveryId: 'd_1' },
+        expect.objectContaining({ $set: expect.objectContaining({ status: 'FAILED' }) })
+      );
+    });
+
+    it('should log warning when subscription not found', async () => {
+      mockWebhookSubscription.findOne.mockResolvedValue(null);
+      const processor = getProcessorFn();
+
+      await processor(fakeJob);
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ webhookId: 'wh_1' }),
+        'Webhook not found or inactive, skipping'
+      );
+    });
+
+    it('should deliver webhook successfully and return success result', async () => {
+      mockWebhookSubscription.findOne.mockResolvedValue({
+        webhookId: 'wh_1',
+        url: 'https://example.com/hook',
+        secret: 'test-secret',
         isActive: true,
       });
+      mockWebhookSubscription.updateOne.mockResolvedValue({});
+      mockWebhookDelivery.updateOne.mockResolvedValue({});
+      mockAxios.post.mockResolvedValue({ status: 200, data: 'ok' });
+      const processor = getProcessorFn();
 
-      expect(result).toBeNull();
+      const result = await processor(fakeJob);
+
+      expect(result).toMatchObject({ success: true, statusCode: 200 });
+      expect(mockWebhookDelivery.updateOne).toHaveBeenCalledWith(
+        { deliveryId: 'd_1' },
+        expect.objectContaining({ $set: expect.objectContaining({ status: 'SUCCESS' }) })
+      );
+    });
+
+    it('should include HMAC signature header in HTTP request', async () => {
+      mockWebhookSubscription.findOne.mockResolvedValue({
+        webhookId: 'wh_1',
+        url: 'https://example.com/hook',
+        secret: 'test-secret',
+        isActive: true,
+      });
+      mockWebhookSubscription.updateOne.mockResolvedValue({});
+      mockWebhookDelivery.updateOne.mockResolvedValue({});
+      mockAxios.post.mockResolvedValue({ status: 200, data: 'ok' });
+      const processor = getProcessorFn();
+
+      await processor(fakeJob);
+
+      const callArgs = mockAxios.post.mock.calls[0];
+      expect(callArgs[2].headers['X-PayFlow-Signature']).toMatch(/^sha256=[a-f0-9]+$/);
+      expect(callArgs[2].headers['X-PayFlow-Delivery-ID']).toBe('d_1');
+    });
+
+    it('should update to RETRYING status on non-last axios error', async () => {
+      mockWebhookSubscription.findOne.mockResolvedValue({
+        webhookId: 'wh_1',
+        url: 'https://example.com/hook',
+        secret: 'test-secret',
+        isActive: true,
+      });
+      mockWebhookDelivery.updateOne.mockResolvedValue({});
+      mockWebhookSubscription.updateOne.mockResolvedValue({});
+      mockAxios.isAxiosError.mockReturnValue(true);
+      mockAxios.post.mockRejectedValue(
+        Object.assign(new Error('connection refused'), { response: { status: 503 } })
+      );
+      const processor = getProcessorFn();
+
+      // attemptsMade=0, maxAttempts=3 → NOT last attempt
+      await expect(
+        processor({ ...fakeJob, attemptsMade: 0 })
+      ).rejects.toThrow();
+
+      expect(mockWebhookDelivery.updateOne).toHaveBeenCalledWith(
+        { deliveryId: 'd_1' },
+        expect.objectContaining({ $set: expect.objectContaining({ status: 'RETRYING' }) })
+      );
+    });
+
+    it('should update to FAILED on last-attempt error', async () => {
+      mockWebhookSubscription.findOne.mockResolvedValue({
+        webhookId: 'wh_1',
+        url: 'https://example.com/hook',
+        secret: 'test-secret',
+        isActive: true,
+      });
+      mockWebhookDelivery.updateOne.mockResolvedValue({});
+      mockWebhookSubscription.updateOne.mockResolvedValue({});
+      mockAxios.isAxiosError.mockReturnValue(false);
+      mockAxios.post.mockRejectedValue(new Error('server error'));
+      const processor = getProcessorFn();
+
+      // attemptsMade=2, maxAttempts=3 → last attempt (2+1 >= 3)
+      await expect(
+        processor({ ...fakeJob, attemptsMade: 2 })
+      ).rejects.toThrow();
+
+      expect(mockWebhookDelivery.updateOne).toHaveBeenCalledWith(
+        { deliveryId: 'd_1' },
+        expect.objectContaining({ $set: expect.objectContaining({ status: 'FAILED' }) })
+      );
+    });
+
+    it('should increment subscription failureCount on error', async () => {
+      mockWebhookSubscription.findOne.mockResolvedValue({
+        webhookId: 'wh_1',
+        url: 'https://example.com/hook',
+        secret: 'test-secret',
+        isActive: true,
+      });
+      mockWebhookDelivery.updateOne.mockResolvedValue({});
+      mockWebhookSubscription.updateOne.mockResolvedValue({});
+      mockAxios.isAxiosError.mockReturnValue(false);
+      mockAxios.post.mockRejectedValue(new Error('error'));
+      const processor = getProcessorFn();
+
+      await expect(processor(fakeJob)).rejects.toThrow();
+
+      expect(mockWebhookSubscription.updateOne).toHaveBeenCalledWith(
+        { webhookId: 'wh_1' },
+        expect.objectContaining({ $inc: { failureCount: 1 } })
+      );
     });
 
     it('should handle axios errors correctly', () => {

@@ -30,8 +30,8 @@ jobs:
       - name: Check Prettier formatting
         run: npm run format:check
 
-  test:
-    name: Test
+  unit:
+    name: Unit Tests
     runs-on: ubuntu-latest
     services:
       mongodb:
@@ -64,8 +64,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests with coverage
-        run: npm run test:ci
+      - name: Run unit tests with coverage
+        run: jest --runInBand tests/unit --coverage
         env:
           NODE_ENV: test
           MONGODB_URI: mongodb://localhost:27017/payflow_test
@@ -82,10 +82,142 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: jest --runInBand tests/integration --detectOpenHandles --forceExit
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/payflow_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-secret-key-for-ci
+          JWT_EXPIRES_IN: 1h
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E tests
+        run: jest --runInBand tests/e2e --detectOpenHandles --forceExit
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/payflow_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-secret-key-for-ci
+          JWT_EXPIRES_IN: 1h
+
+  chaos:
+    name: Chaos Tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run chaos tests
+        run: jest --runInBand tests/chaos --detectOpenHandles --forceExit
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/payflow_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-secret-key-for-ci
+          JWT_EXPIRES_IN: 1h
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, unit, integration, e2e, chaos]
     steps:
       - uses: actions/checkout@v4
 

@@ -5,14 +5,15 @@
  */
 
 // Mock BullMQ Worker - must be defined before jest.mock
-const mockWorkerInstance = {
+// Note: named differently from bcrypt.test.ts mockBullWorkerInstance to avoid TS2451
+const mockBullWorkerInstance = {
   on: jest.fn(),
   close: jest.fn().mockResolvedValue(undefined),
   closing: false,
 };
 
 jest.mock('bullmq', () => ({
-  Worker: jest.fn().mockImplementation(() => mockWorkerInstance),
+  Worker: jest.fn().mockImplementation(() => mockBullWorkerInstance),
   Job: jest.fn(),
 }));
 
@@ -24,14 +25,14 @@ jest.mock('../../../src/queues/queue.config', () => ({
 }));
 
 // Mock logger
-const mockLogger = {
+const mockNotifWorkerLogger = {
   info: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
   warn: jest.fn(),
 };
 jest.mock('../../../src/observability', () => ({
-  logger: mockLogger,
+  logger: mockNotifWorkerLogger,
 }));
 
 describe('Notification Worker', () => {
@@ -43,9 +44,9 @@ describe('Notification Worker', () => {
   beforeEach(async () => {
     // Reset mocks
     jest.clearAllMocks();
-    mockWorkerInstance.on.mockClear();
-    mockWorkerInstance.close.mockClear();
-    mockWorkerInstance.closing = false;
+    mockBullWorkerInstance.on.mockClear();
+    mockBullWorkerInstance.close.mockClear();
+    mockBullWorkerInstance.closing = false;
 
     // Reset module cache to get fresh instance
     jest.resetModules();
@@ -62,9 +63,9 @@ describe('Notification Worker', () => {
       const worker = startNotificationWorker();
 
       expect(worker).toBeDefined();
-      expect(mockWorkerInstance.on).toHaveBeenCalledWith('completed', expect.any(Function));
-      expect(mockWorkerInstance.on).toHaveBeenCalledWith('failed', expect.any(Function));
-      expect(mockWorkerInstance.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(mockBullWorkerInstance.on).toHaveBeenCalledWith('completed', expect.any(Function));
+      expect(mockBullWorkerInstance.on).toHaveBeenCalledWith('failed', expect.any(Function));
+      expect(mockBullWorkerInstance.on).toHaveBeenCalledWith('error', expect.any(Function));
     });
 
     it('should return existing worker if already started', () => {
@@ -77,7 +78,7 @@ describe('Notification Worker', () => {
     it('should setup worker event handlers', () => {
       startNotificationWorker();
 
-      const onCalls = mockWorkerInstance.on.mock.calls.map((call: unknown[]) => call[0]);
+      const onCalls = mockBullWorkerInstance.on.mock.calls.map((call: unknown[]) => call[0]);
       expect(onCalls).toContain('completed');
       expect(onCalls).toContain('failed');
       expect(onCalls).toContain('error');
@@ -89,7 +90,7 @@ describe('Notification Worker', () => {
       startNotificationWorker();
       await stopNotificationWorker();
 
-      expect(mockWorkerInstance.close).toHaveBeenCalled();
+      expect(mockBullWorkerInstance.close).toHaveBeenCalled();
     });
 
     it('should handle stopping when no worker exists', async () => {
@@ -101,14 +102,14 @@ describe('Notification Worker', () => {
   describe('isNotificationWorkerRunning', () => {
     it('should return true when worker is running', () => {
       startNotificationWorker();
-      mockWorkerInstance.closing = false;
+      mockBullWorkerInstance.closing = false;
 
       expect(isNotificationWorkerRunning()).toBe(true);
     });
 
     it('should return false when worker is closing', () => {
       startNotificationWorker();
-      mockWorkerInstance.closing = true;
+      mockBullWorkerInstance.closing = true;
 
       expect(isNotificationWorkerRunning()).toBe(false);
     });
@@ -116,12 +117,12 @@ describe('Notification Worker', () => {
 
   describe('worker event handlers', () => {
     it('should log on job completion', () => {
-      mockLogger.info.mockClear();
+      mockNotifWorkerLogger.info.mockClear();
 
       startNotificationWorker();
 
       // Get the completed handler
-      const completedCall = mockWorkerInstance.on.mock.calls.find(
+      const completedCall = mockBullWorkerInstance.on.mock.calls.find(
         (call: unknown[]) => call[0] === 'completed'
       );
       expect(completedCall).toBeDefined();
@@ -129,19 +130,19 @@ describe('Notification Worker', () => {
       const completedHandler = completedCall[1];
       completedHandler({ id: 'job-123' }, { sent: true, channel: 'push' });
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(mockNotifWorkerLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({ jobId: 'job-123', sent: true, channel: 'push' }),
         'Notification job completed'
       );
     });
 
     it('should log on job failure', () => {
-      mockLogger.error.mockClear();
+      mockNotifWorkerLogger.error.mockClear();
 
       startNotificationWorker();
 
       // Get the failed handler
-      const failedCall = mockWorkerInstance.on.mock.calls.find(
+      const failedCall = mockBullWorkerInstance.on.mock.calls.find(
         (call: unknown[]) => call[0] === 'failed'
       );
       expect(failedCall).toBeDefined();
@@ -149,7 +150,7 @@ describe('Notification Worker', () => {
       const failedHandler = failedCall[1];
       failedHandler({ id: 'job-456' }, new Error('Notification delivery failed'));
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
+      expect(mockNotifWorkerLogger.error).toHaveBeenCalledWith(
         expect.objectContaining({ jobId: 'job-456' }),
         'Notification job failed'
       );
@@ -158,7 +159,7 @@ describe('Notification Worker', () => {
     it('should handle null job in failed handler', () => {
       startNotificationWorker();
 
-      const failedCall = mockWorkerInstance.on.mock.calls.find(
+      const failedCall = mockBullWorkerInstance.on.mock.calls.find(
         (call: unknown[]) => call[0] === 'failed'
       );
       const failedHandler = failedCall[1];
@@ -168,11 +169,11 @@ describe('Notification Worker', () => {
     });
 
     it('should log worker errors', () => {
-      mockLogger.error.mockClear();
+      mockNotifWorkerLogger.error.mockClear();
 
       startNotificationWorker();
 
-      const errorCall = mockWorkerInstance.on.mock.calls.find(
+      const errorCall = mockBullWorkerInstance.on.mock.calls.find(
         (call: unknown[]) => call[0] === 'error'
       );
       const errorHandler = errorCall[1];
@@ -180,7 +181,7 @@ describe('Notification Worker', () => {
       const testError = new Error('Worker crashed');
       errorHandler(testError);
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
+      expect(mockNotifWorkerLogger.error).toHaveBeenCalledWith(
         expect.objectContaining({ err: testError }),
         'Notification worker error'
       );
@@ -260,7 +261,7 @@ describe('Notification Worker', () => {
 
       // Start worker
       startNotificationWorker();
-      mockWorkerInstance.closing = false;
+      mockBullWorkerInstance.closing = false;
       expect(isNotificationWorkerRunning()).toBe(true);
 
       // Stop worker
@@ -271,10 +272,10 @@ describe('Notification Worker', () => {
     it('should handle multiple start/stop cycles', async () => {
       for (let i = 0; i < 3; i++) {
         startNotificationWorker();
-        expect(mockWorkerInstance.on).toHaveBeenCalled();
+        expect(mockBullWorkerInstance.on).toHaveBeenCalled();
 
         await stopNotificationWorker();
-        expect(mockWorkerInstance.close).toHaveBeenCalled();
+        expect(mockBullWorkerInstance.close).toHaveBeenCalled();
 
         jest.clearAllMocks();
       }
@@ -283,17 +284,17 @@ describe('Notification Worker', () => {
 
   describe('logging behavior', () => {
     it('should log when worker starts', () => {
-      mockLogger.info.mockClear();
+      mockNotifWorkerLogger.info.mockClear();
 
       // Start the worker, which should trigger a log message
       startNotificationWorker();
 
       // Verify the logger was called with the expected message
-      expect(mockLogger.info).toHaveBeenCalledWith('Notification worker started');
+      expect(mockNotifWorkerLogger.info).toHaveBeenCalledWith('Notification worker started');
     });
 
     it('should log notification details during processing', async () => {
-      mockLogger.info.mockClear();
+      mockNotifWorkerLogger.info.mockClear();
       const WorkerMock = jest.requireMock('bullmq').Worker;
 
       startNotificationWorker();
@@ -312,7 +313,7 @@ describe('Notification Worker', () => {
 
       await processNotificationJob(mockJob);
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(mockNotifWorkerLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'user_123', type: 'TRANSACTION_COMPLETED' }),
         'Processing notification'
       );

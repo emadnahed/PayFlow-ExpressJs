@@ -326,6 +326,19 @@ export const PAYMENT_RESPONSE_DOMAIN = isProduction
   : 'localhost';
 
 // =============================================================================
+// SENTRY CONFIGURATION
+// =============================================================================
+
+/**
+ * Sentry error tracking configuration
+ */
+export const SENTRY_CONFIG = {
+  dsn: process.env.SENTRY_DSN || '',
+  environment: process.env.SENTRY_ENVIRONMENT || NODE_ENV,
+  tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+};
+
+// =============================================================================
 // TESTING CONFIGURATION
 // =============================================================================
 

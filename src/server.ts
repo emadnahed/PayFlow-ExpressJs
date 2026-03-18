@@ -1,6 +1,7 @@
-// Initialize tracing first (before any other imports)
+// Initialize Sentry first (before any other instrumentation)
 // eslint-disable-next-line import/order
-import { initTracing, shutdownTracing, logger } from './observability';
+import { initSentry, initTracing, shutdownTracing, logger } from './observability';
+initSentry();
 initTracing();
 
 import { createApp } from './app';

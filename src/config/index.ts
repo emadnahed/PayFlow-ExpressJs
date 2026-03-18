@@ -22,6 +22,7 @@ import {
   API_CONFIG,
   LOG_CONFIG,
   OTEL_CONFIG,
+  SENTRY_CONFIG,
   SECURITY_CONFIG,
   validateProductionEnv,
   getEnvironmentInfo,
@@ -102,6 +103,9 @@ export const config = {
 
   // Observability
   otel: OTEL_CONFIG,
+
+  // Sentry
+  sentry: SENTRY_CONFIG,
 
   // Security
   security: SECURITY_CONFIG,

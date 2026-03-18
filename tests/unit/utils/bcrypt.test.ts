@@ -337,6 +337,74 @@ describe('Bcrypt Worker Pool', () => {
       messageHandler({ success: true, result: '$2a$10$hash' });
       await hashPromise;
     });
+
+    it('should replace worker when error handler fires', async () => {
+      // Initialize pool and complete a task
+      const hashPromise = hashPassword('test');
+      const workerCall = mockWorkerConstructor.mock.results[0].value;
+      const messageHandler = workerCall.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'message'
+      )?.[1];
+      messageHandler({ success: true, result: '$2a$10$hash' });
+      await hashPromise;
+
+      const initialWorkerCount = mockWorkerConstructor.mock.calls.length;
+
+      // Invoke the error handler for worker 0
+      const errorHandler = workerCall.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'error'
+      )?.[1];
+      expect(errorHandler).toBeDefined();
+      errorHandler(new Error('Worker crashed'));
+
+      // A new replacement worker should have been created
+      expect(mockWorkerConstructor.mock.calls.length).toBeGreaterThan(initialWorkerCount);
+    });
+
+    it('should replace worker when exit handler fires with non-zero code', async () => {
+      // Initialize pool and complete a task
+      const hashPromise = hashPassword('test');
+      const workerCall = mockWorkerConstructor.mock.results[0].value;
+      const messageHandler = workerCall.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'message'
+      )?.[1];
+      messageHandler({ success: true, result: '$2a$10$hash' });
+      await hashPromise;
+
+      const initialWorkerCount = mockWorkerConstructor.mock.calls.length;
+
+      // Invoke exit handler with non-zero code
+      const exitHandler = workerCall.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'exit'
+      )?.[1];
+      expect(exitHandler).toBeDefined();
+      exitHandler(1); // non-zero exit
+
+      // Replacement worker should have been created
+      expect(mockWorkerConstructor.mock.calls.length).toBeGreaterThan(initialWorkerCount);
+    });
+
+    it('should NOT replace worker when exit handler fires with code 0', async () => {
+      // Initialize pool and complete a task
+      const hashPromise = hashPassword('test');
+      const workerCall = mockWorkerConstructor.mock.results[0].value;
+      const messageHandler = workerCall.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'message'
+      )?.[1];
+      messageHandler({ success: true, result: '$2a$10$hash' });
+      await hashPromise;
+
+      const initialWorkerCount = mockWorkerConstructor.mock.calls.length;
+
+      // Invoke exit handler with code 0 (clean exit)
+      const exitHandler = workerCall.on.mock.calls.find(
+        (call: unknown[]) => call[0] === 'exit'
+      )?.[1];
+      exitHandler(0);
+
+      // No new worker should have been created for a clean exit
+      expect(mockWorkerConstructor.mock.calls.length).toBe(initialWorkerCount);
+    });
   });
 
   describe('shutdownBcryptPool', () => {

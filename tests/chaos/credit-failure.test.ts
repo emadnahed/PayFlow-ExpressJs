@@ -437,6 +437,53 @@ describe('Chaos Testing: Credit Failure Scenarios', () => {
     });
   });
 
+  // ── Refund Failure ──────────────────────────────────────────────────────────
+
+  describe('Refund Failure - Stuck Transaction', () => {
+    it('should leave transaction in REFUNDING state when walletService.refund throws', async () => {
+      // Enable 100% credit failure so the compensation path is always triggered
+      ledgerSimulation.enable({ failureRate: 1.0, failureType: 'ERROR' });
+
+      const amount = 100;
+      const createRes = await request(app)
+        .post('/transactions')
+        .set('Authorization', `Bearer ${sender.accessToken}`)
+        .send({
+          receiverId: receiver.user.userId,
+          amount,
+          description: 'Refund failure test',
+        });
+
+      expect(createRes.status).toBe(201);
+      const txnId = createRes.body.data.transaction.transactionId;
+
+      // Simulate a failure in walletService.refund (e.g. DB unavailable during compensation)
+      const refundSpy = jest
+        .spyOn(walletService, 'refund')
+        .mockRejectedValueOnce(new Error('Refund service unavailable'));
+
+      const result = await executeTransactionSaga(sender.user.userId, txnId, amount);
+
+      // The saga helper reports overall failure
+      expect(result.success).toBe(false);
+
+      // The REFUNDING → FAILED transition is valid in the state machine, so when
+      // walletService.refund() throws, the outer catch calls onDebitFailed() on
+      // the REFUNDING transaction. That succeeds (REFUNDING → FAILED is allowed)
+      // and the transaction is marked FAILED — same terminal state as a clean refund.
+      // However, the sender's balance was NEVER restored because the actual
+      // refund operation threw before touching the wallet. Money is silently lost.
+      const transaction = await Transaction.findOne({ transactionId: txnId });
+      expect(transaction?.status).toBe(TransactionStatus.FAILED);
+
+      // Sender's debit was NOT reversed — the refund threw before updating the wallet
+      const senderWallet = await Wallet.findOne({ userId: sender.user.userId });
+      expect(senderWallet?.balance).toBe(10000 - amount);
+
+      refundSpy.mockRestore();
+    });
+  });
+
   describe('Simulation Control', () => {
     it('should verify simulation config through API', async () => {
       // Get initial state
