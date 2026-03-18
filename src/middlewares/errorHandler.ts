@@ -8,7 +8,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 import { config } from '../config';
-import { logger, getCorrelationId } from '../observability';
+import { logger, getCorrelationId, captureSentryException } from '../observability';
 import { ErrorCode, ErrorResponse, errorCodeToStatus } from '../types/errors';
 
 /**
@@ -53,6 +53,11 @@ export const errorHandler = (
     },
     `Error: ${err.message}`
   );
+
+  // Capture non-operational (5xx) errors in Sentry
+  if (!err.isOperational || statusCode >= 500) {
+    captureSentryException(err, { correlationId });
+  }
 
   // Sanitize error message for production 5xx errors
   const message =

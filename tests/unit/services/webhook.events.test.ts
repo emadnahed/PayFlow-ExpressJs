@@ -41,6 +41,17 @@ jest.mock('../../../src/models/Transaction', () => ({
   },
 }));
 
+// Mock logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+jest.mock('../../../src/observability', () => ({
+  logger: mockLogger,
+}));
+
 describe('Webhook Event Handlers', () => {
   let registerWebhookEventHandlers: typeof import('../../../src/services/webhook/webhook.events').registerWebhookEventHandlers;
   let unregisterWebhookEventHandlers: typeof import('../../../src/services/webhook/webhook.events').unregisterWebhookEventHandlers;
@@ -95,7 +106,7 @@ describe('Webhook Event Handlers', () => {
 
   describe('handleTransactionCompleted', () => {
     it('should trigger webhooks with correct payload', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.debug.mockClear();
 
       await registerWebhookEventHandlers();
 
@@ -131,15 +142,14 @@ describe('Webhook Event Handlers', () => {
         })
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Triggered 2 webhooks for TRANSACTION_COMPLETED')
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_123', count: 2 }),
+        'Webhook Events: Triggered webhooks for TRANSACTION_COMPLETED'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle webhook trigger errors gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       mockTriggerWebhooks.mockRejectedValueOnce(new Error('Webhook error'));
 
       await registerWebhookEventHandlers();
@@ -163,18 +173,16 @@ describe('Webhook Event Handlers', () => {
       // Should not throw
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error triggering webhooks for TRANSACTION_COMPLETED'),
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_456', err: expect.any(Error) }),
+        'Webhook Events: Error triggering webhooks for TRANSACTION_COMPLETED'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 
   describe('handleTransactionFailed', () => {
     it('should trigger webhooks with correct payload including transaction data', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.debug.mockClear();
 
       await registerWebhookEventHandlers();
 
@@ -206,12 +214,10 @@ describe('Webhook Event Handlers', () => {
           refunded: true,
         })
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should use default values when transaction not found', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.debug.mockClear();
       mockFindOne.mockResolvedValueOnce(null);
 
       await registerWebhookEventHandlers();
@@ -240,12 +246,10 @@ describe('Webhook Event Handlers', () => {
           currency: 'INR',
         })
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle webhook trigger errors gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       mockTriggerWebhooks.mockRejectedValueOnce(new Error('Webhook error'));
 
       await registerWebhookEventHandlers();
@@ -267,12 +271,10 @@ describe('Webhook Event Handlers', () => {
       // Should not throw
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error triggering webhooks for TRANSACTION_FAILED'),
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_abc', err: expect.any(Error) }),
+        'Webhook Events: Error triggering webhooks for TRANSACTION_FAILED'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 });

@@ -50,3 +50,6 @@ export {
   traceTransaction,
   traceWebhook,
 } from './tracing';
+
+// Sentry exports
+export { initSentry, captureSentryException, setSentryUser } from './sentry';

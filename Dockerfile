@@ -66,15 +66,16 @@ ENV PORT=3000
 # ================================
 # Node.js Tuning for I/O-bound workloads
 # ================================
-# UV_THREADPOOL_SIZE: Increase async I/O threads (default: 4)
+# UV_THREADPOOL_SIZE: Async I/O threads (default: 4)
 # - MongoDB, Redis, file operations use libuv thread pool
-# - 8 threads optimal for I/O-heavy payment processing
-ENV UV_THREADPOOL_SIZE=8
+# - 4 threads sufficient for single-worker deployment
+ENV UV_THREADPOOL_SIZE=4
 
 # Node.js memory and GC options passed via CMD
 # --max-old-space-size=256: Limit V8 heap to 256MB (leaves room for other memory)
 # --optimize-for-size: Prefer memory efficiency over speed
 # --gc-interval=100: More frequent GC for lower memory footprint
 
-# Start the application with optimized flags
-CMD ["node", "--max-old-space-size=256", "--optimize-for-size", "--gc-interval=100", "dist/server.js"]
+# Start the application with clustering for multi-core utilization
+# Use cluster.js for production (spawns workers based on CLUSTER_WORKERS env)
+CMD ["node", "--max-old-space-size=256", "--optimize-for-size", "--gc-interval=100", "dist/cluster.js"]

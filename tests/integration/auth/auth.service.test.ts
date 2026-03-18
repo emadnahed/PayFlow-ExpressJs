@@ -207,9 +207,9 @@ describe('AuthService Integration Tests', () => {
       const accessPayload = jwt.decode(result.tokens.accessToken) as any;
       const refreshPayload = jwt.decode(result.tokens.refreshToken) as any;
 
-      // Access token should expire in ~15 minutes
+      // Access token should expire in ~1 hour (test/dev default)
       const accessExpiry = accessPayload.exp - accessPayload.iat;
-      expect(accessExpiry).toBe(15 * 60); // 15 minutes in seconds
+      expect(accessExpiry).toBe(60 * 60); // 1 hour in seconds (test mode default)
 
       // Refresh token should expire in ~7 days
       const refreshExpiry = refreshPayload.exp - refreshPayload.iat;

@@ -28,6 +28,17 @@ jest.mock('../../../src/services/wallet/wallet.service', () => ({
   },
 }));
 
+// Mock logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+jest.mock('../../../src/observability', () => ({
+  logger: mockLogger,
+}));
+
 describe('Wallet Event Handlers', () => {
   let registerWalletEventHandlers: typeof import('../../../src/services/wallet/wallet.events').registerWalletEventHandlers;
   let unregisterWalletEventHandlers: typeof import('../../../src/services/wallet/wallet.events').unregisterWalletEventHandlers;
@@ -106,7 +117,7 @@ describe('Wallet Event Handlers', () => {
     });
 
     it('should handle debit failure gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       mockDebit.mockRejectedValueOnce(new Error('Insufficient balance'));
 
       await registerWalletEventHandlers();
@@ -125,12 +136,10 @@ describe('Wallet Event Handlers', () => {
       // Should not throw
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Debit failed'),
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_456', err: expect.any(Error) }),
+        'Debit failed'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -155,7 +164,7 @@ describe('Wallet Event Handlers', () => {
     });
 
     it('should handle refund failure gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       mockRefund.mockRejectedValueOnce(new Error('Refund failed'));
 
       await registerWalletEventHandlers();
@@ -174,18 +183,16 @@ describe('Wallet Event Handlers', () => {
       // Should not throw
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Refund failed'),
-        expect.any(Error)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_abc', err: expect.any(Error) }),
+        'Refund failed'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 
   describe('handleDebitSuccess', () => {
     it('should log debit success event', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.debug.mockClear();
 
       await registerWalletEventHandlers();
 
@@ -202,11 +209,10 @@ describe('Wallet Event Handlers', () => {
 
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DEBIT_SUCCESS received for txn txn_def')
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_def' }),
+        'DEBIT_SUCCESS received'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 });

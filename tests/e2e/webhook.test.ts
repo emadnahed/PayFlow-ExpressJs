@@ -363,23 +363,30 @@ describe('Webhook API Tests', () => {
     });
 
     it('should reset failure count when reactivating', async () => {
-      const user = await createTestUser(app, { email: 'user@test.com' });
+      // Use unique email to avoid test isolation issues
+      const uniqueEmail = `reset-failure-${Date.now()}@test.com`;
+      const user = await createTestUser(app, { email: uniqueEmail });
 
       const createRes = await request(app)
         .post('/webhooks')
         .set('Authorization', `Bearer ${user.accessToken}`)
         .send({
-          url: 'https://example.com/webhook',
+          url: 'https://example.com/webhook-reset',
           events: [EventType.TRANSACTION_COMPLETED],
         });
+
+      // Verify webhook was created successfully
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.data?.webhook?.webhookId).toBeDefined();
 
       const webhookId = createRes.body.data.webhook.webhookId;
 
       // Simulate failures by updating directly
-      await WebhookSubscription.updateOne(
+      const updateResult = await WebhookSubscription.updateOne(
         { webhookId },
         { $set: { failureCount: 5, isActive: false } }
       );
+      expect(updateResult.matchedCount).toBe(1);
 
       // Reactivate
       const response = await request(app)

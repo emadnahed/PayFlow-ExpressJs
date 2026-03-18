@@ -26,6 +26,17 @@ jest.mock('../../../src/services/ledger/ledger.service', () => ({
   },
 }));
 
+// Mock logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+jest.mock('../../../src/observability', () => ({
+  logger: mockLogger,
+}));
+
 describe('Ledger Event Handlers', () => {
   let registerLedgerEventHandlers: typeof import('../../../src/services/ledger/ledger.events').registerLedgerEventHandlers;
   let unregisterLedgerEventHandlers: typeof import('../../../src/services/ledger/ledger.events').unregisterLedgerEventHandlers;
@@ -94,7 +105,7 @@ describe('Ledger Event Handlers', () => {
     });
 
     it('should log success when credit completes', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.info.mockClear();
       mockProcessCredit.mockResolvedValueOnce({ success: true, newBalance: 1100 });
 
       await registerLedgerEventHandlers();
@@ -112,15 +123,14 @@ describe('Ledger Event Handlers', () => {
 
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Credit completed for transaction txn_456')
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_456', newBalance: 1100 }),
+        'Ledger credit completed'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should log failure when credit fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockLogger.warn.mockClear();
       mockProcessCredit.mockResolvedValueOnce({ success: false, error: 'Credit failed' });
 
       await registerLedgerEventHandlers();
@@ -138,15 +148,14 @@ describe('Ledger Event Handlers', () => {
 
       await handler(event);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Credit failed for transaction txn_789')
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_789', error: 'Credit failed' }),
+        'Ledger credit failed'
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should throw and log error on unexpected failure', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       const error = new Error('Unexpected error');
       mockProcessCredit.mockRejectedValueOnce(error);
 
@@ -165,12 +174,10 @@ describe('Ledger Event Handlers', () => {
 
       await expect(handler(event)).rejects.toThrow('Unexpected error');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('CRITICAL: Unexpected error handling DEBIT_SUCCESS'),
-        error
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionId: 'txn_abc', err: error }),
+        'Ledger CRITICAL: Unexpected error handling DEBIT_SUCCESS'
       );
-
-      consoleSpy.mockRestore();
     });
   });
 });

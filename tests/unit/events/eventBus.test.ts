@@ -33,6 +33,17 @@ jest.mock('../../../src/config', () => ({
   },
 }));
 
+// Mock logger
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+jest.mock('../../../src/observability', () => ({
+  logger: mockLogger,
+}));
+
 describe('EventBus', () => {
   let eventBus: typeof import('../../../src/events/eventBus').eventBus;
 
@@ -233,7 +244,7 @@ describe('EventBus', () => {
     });
 
     it('should handle JSON parse errors gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       await eventBus.connect();
 
       // Find and call the message handler with invalid JSON
@@ -242,17 +253,15 @@ describe('EventBus', () => {
         const messageHandler = messageCall[1];
         await messageHandler('channel', 'invalid-json');
 
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Error parsing event message:',
-          expect.any(Error)
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          expect.objectContaining({ err: expect.any(Error) }),
+          'Error parsing event message'
         );
       }
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle handler errors gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockLogger.error.mockClear();
       await eventBus.connect();
 
       const failingHandler = jest.fn().mockRejectedValue(new Error('Handler error'));
@@ -269,13 +278,11 @@ describe('EventBus', () => {
         };
         await messageHandler(EventType.TRANSACTION_FAILED, JSON.stringify(event));
 
-        expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Error handling event'),
-          expect.any(Error)
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          expect.objectContaining({ err: expect.any(Error), eventType: EventType.TRANSACTION_FAILED }),
+          'Error handling event'
         );
       }
-
-      consoleSpy.mockRestore();
     });
   });
 
