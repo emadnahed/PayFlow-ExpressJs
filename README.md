@@ -37,7 +37,7 @@ npm run docker:up
 npm run dev
 
 # Open API docs
-open http://localhost:3000/docs
+open http://localhost:3000/api-docs
 ```
 
 ## Architecture
@@ -244,8 +244,10 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 # Authentication
-JWT_SECRET=your-secret-key    # Min 32 chars in production
-BCRYPT_ROUNDS=10              # 4 (test), 10 (dev), 12 (prod)
+JWT_SECRET=your-secret-key             # Min 32 chars in production
+JWT_ACCESS_TOKEN_EXPIRES_IN=15m
+JWT_REFRESH_TOKEN_EXPIRES_IN=7d
+BCRYPT_ROUNDS=10                       # 4 (test), 10 (dev), 12 (prod)
 
 # Rate Limiting
 RATE_LIMIT_DISABLED=false     # Set true to disable all rate limits
