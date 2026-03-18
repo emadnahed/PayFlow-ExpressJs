@@ -46,9 +46,15 @@ async function handleTransactionCompleted(event: TransactionCompletedEvent): Pro
       payload
     );
 
-    logger.debug({ transactionId, count }, 'Webhook Events: Triggered webhooks for TRANSACTION_COMPLETED');
+    logger.debug(
+      { transactionId, count },
+      'Webhook Events: Triggered webhooks for TRANSACTION_COMPLETED'
+    );
   } catch (error) {
-    logger.error({ transactionId, err: error }, 'Webhook Events: Error triggering webhooks for TRANSACTION_COMPLETED');
+    logger.error(
+      { transactionId, err: error },
+      'Webhook Events: Error triggering webhooks for TRANSACTION_COMPLETED'
+    );
   }
 }
 
@@ -85,9 +91,15 @@ async function handleTransactionFailed(event: TransactionFailedEvent): Promise<v
       payload
     );
 
-    logger.debug({ transactionId, count }, 'Webhook Events: Triggered webhooks for TRANSACTION_FAILED');
+    logger.debug(
+      { transactionId, count },
+      'Webhook Events: Triggered webhooks for TRANSACTION_FAILED'
+    );
   } catch (error) {
-    logger.error({ transactionId, err: error }, 'Webhook Events: Error triggering webhooks for TRANSACTION_FAILED');
+    logger.error(
+      { transactionId, err: error },
+      'Webhook Events: Error triggering webhooks for TRANSACTION_FAILED'
+    );
   }
 }
 

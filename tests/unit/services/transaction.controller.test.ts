@@ -129,9 +129,7 @@ describe('TransactionController (unit)', () => {
 
       await controller.getById(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({ statusCode: 403 })
-      );
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
     });
 
     it('should allow receiver to view transaction', async () => {

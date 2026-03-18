@@ -181,7 +181,12 @@ describe('Notification Service Integration Tests', () => {
     it('should format transaction initiated message', async () => {
       const queue = getNotificationQueue();
 
-      await notificationService.notifyTransactionInitiated(testUserId, 1000, 'INR', 'txn_template_1');
+      await notificationService.notifyTransactionInitiated(
+        testUserId,
+        1000,
+        'INR',
+        'txn_template_1'
+      );
 
       // Check all states as worker may process jobs
       const jobs = await queue.getJobs(['waiting', 'active', 'completed']);
@@ -219,7 +224,12 @@ describe('Notification Service Integration Tests', () => {
 
       for (let i = 0; i < 20; i++) {
         promises.push(
-          notificationService.notifyTransactionInitiated(testUserId, 50 + i, 'INR', `txn_concurrent_${i}`)
+          notificationService.notifyTransactionInitiated(
+            testUserId,
+            50 + i,
+            'INR',
+            `txn_concurrent_${i}`
+          )
         );
       }
 
@@ -269,7 +279,13 @@ describe('Notification Service Integration Tests', () => {
       const queue = getNotificationQueue();
 
       await notificationService.notifyTransactionInitiated(testUserId, 100, 'INR', 'txn_type_1');
-      await notificationService.notifyTransactionCompleted(testUserId, 'User', 200, 'INR', 'txn_type_2');
+      await notificationService.notifyTransactionCompleted(
+        testUserId,
+        'User',
+        200,
+        'INR',
+        'txn_type_2'
+      );
       await notificationService.notifyTransactionFailed(testUserId, 150, 'INR', 'txn_type_3');
       await notificationService.notifyCreditReceived(testUserId, 'User', 250, 'INR', 'txn_type_4');
 

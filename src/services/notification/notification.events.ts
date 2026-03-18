@@ -93,7 +93,10 @@ async function handleTransactionFailed(event: TransactionFailedEvent): Promise<v
       );
     }
   } catch (error) {
-    logger.error({ transactionId, err: error }, 'Notification Events: Error queueing TRANSACTION_FAILED notification');
+    logger.error(
+      { transactionId, err: error },
+      'Notification Events: Error queueing TRANSACTION_FAILED notification'
+    );
   }
 }
 
@@ -122,7 +125,10 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
       );
     }
   } catch (error) {
-    logger.error({ transactionId, err: error }, 'Notification Events: Error queueing CREDIT_RECEIVED notification');
+    logger.error(
+      { transactionId, err: error },
+      'Notification Events: Error queueing CREDIT_RECEIVED notification'
+    );
   }
 }
 

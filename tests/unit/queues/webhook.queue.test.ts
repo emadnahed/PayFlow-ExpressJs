@@ -89,11 +89,9 @@ describe('Webhook Queue', () => {
 
       const job = await enqueueWebhookDelivery(jobData);
 
-      expect(mockAdd).toHaveBeenCalledWith(
-        `webhook:${EventType.TRANSACTION_COMPLETED}`,
-        jobData,
-        { jobId: 'del_456' }
-      );
+      expect(mockAdd).toHaveBeenCalledWith(`webhook:${EventType.TRANSACTION_COMPLETED}`, jobData, {
+        jobId: 'del_456',
+      });
       expect(job.id).toBe('job-123');
     });
 
@@ -116,11 +114,9 @@ describe('Webhook Queue', () => {
 
       await enqueueWebhookDelivery(jobData);
 
-      expect(mockAdd).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(Object),
-        { jobId: 'unique-delivery-id' }
-      );
+      expect(mockAdd).toHaveBeenCalledWith(expect.any(String), expect.any(Object), {
+        jobId: 'unique-delivery-id',
+      });
     });
   });
 

@@ -67,10 +67,7 @@ async function processWebhookJob(
       validateStatus: (status) => status >= 200 && status < 300,
     });
 
-    logger.info(
-      { deliveryId, statusCode: response.status },
-      'Webhook delivery successful'
-    );
+    logger.info({ deliveryId, statusCode: response.status }, 'Webhook delivery successful');
 
     // Update delivery record
     await updateDeliveryStatus(deliveryId, 'SUCCESS', {

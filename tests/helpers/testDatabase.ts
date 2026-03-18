@@ -1,13 +1,11 @@
 import mongoose from 'mongoose';
 
-const TEST_MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/payflow_test';
-
 export const connectTestDatabase = async (): Promise<void> => {
   if (mongoose.connection.readyState === 1) {
     return;
   }
 
-  await mongoose.connect(TEST_MONGODB_URI);
+  await mongoose.connect(process.env.MONGODB_URI as string);
 };
 
 export const disconnectTestDatabase = async (): Promise<void> => {

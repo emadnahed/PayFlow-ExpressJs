@@ -13,7 +13,10 @@ import { TransactionStatus } from '../../../src/types/events';
 const TEST_MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/payflow_test';
 
 // Import the real service
-import { TransactionService, CreateTransactionDTO } from '../../../src/services/transaction/transaction.service';
+import {
+  TransactionService,
+  CreateTransactionDTO,
+} from '../../../src/services/transaction/transaction.service';
 
 describe('Transaction Service Integration Tests', () => {
   let transactionService: TransactionService;
@@ -104,9 +107,9 @@ describe('Transaction Service Integration Tests', () => {
         amount: 100,
       };
 
-      await expect(
-        transactionService.initiateTransaction(senderUserId, dto)
-      ).rejects.toThrow('Cannot transfer to yourself');
+      await expect(transactionService.initiateTransaction(senderUserId, dto)).rejects.toThrow(
+        'Cannot transfer to yourself'
+      );
     });
 
     it('should reject negative amount', async () => {
@@ -115,9 +118,9 @@ describe('Transaction Service Integration Tests', () => {
         amount: -100,
       };
 
-      await expect(
-        transactionService.initiateTransaction(senderUserId, dto)
-      ).rejects.toThrow('Amount must be positive');
+      await expect(transactionService.initiateTransaction(senderUserId, dto)).rejects.toThrow(
+        'Amount must be positive'
+      );
     });
 
     it('should reject zero amount', async () => {
@@ -126,9 +129,9 @@ describe('Transaction Service Integration Tests', () => {
         amount: 0,
       };
 
-      await expect(
-        transactionService.initiateTransaction(senderUserId, dto)
-      ).rejects.toThrow('Amount must be positive');
+      await expect(transactionService.initiateTransaction(senderUserId, dto)).rejects.toThrow(
+        'Amount must be positive'
+      );
     });
 
     it('should reject non-existent receiver', async () => {
@@ -137,9 +140,9 @@ describe('Transaction Service Integration Tests', () => {
         amount: 100,
       };
 
-      await expect(
-        transactionService.initiateTransaction(senderUserId, dto)
-      ).rejects.toThrow('Receiver wallet not found');
+      await expect(transactionService.initiateTransaction(senderUserId, dto)).rejects.toThrow(
+        'Receiver wallet not found'
+      );
     });
 
     it('should use default currency if not specified', async () => {
@@ -172,9 +175,9 @@ describe('Transaction Service Integration Tests', () => {
     });
 
     it('should throw error for non-existent transaction', async () => {
-      await expect(
-        transactionService.getTransaction('txn_nonexistent')
-      ).rejects.toThrow('Transaction not found');
+      await expect(transactionService.getTransaction('txn_nonexistent')).rejects.toThrow(
+        'Transaction not found'
+      );
     });
 
     it('should get user transactions as sender', async () => {
@@ -329,10 +332,7 @@ describe('Transaction Service Integration Tests', () => {
     });
 
     it('should handle debit failed', async () => {
-      await transactionService.onDebitFailed(
-        testTransaction.transactionId,
-        'Insufficient balance'
-      );
+      await transactionService.onDebitFailed(testTransaction.transactionId, 'Insufficient balance');
 
       const updated = await transactionService.getTransaction(testTransaction.transactionId);
       expect(updated.status).toBe(TransactionStatus.FAILED);

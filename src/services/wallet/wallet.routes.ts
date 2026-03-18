@@ -10,7 +10,6 @@ import {
   historyQueryValidation,
 } from './wallet.validation';
 
-
 const router = Router();
 
 // All wallet routes require authentication

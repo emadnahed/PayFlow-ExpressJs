@@ -36,11 +36,11 @@ describe('NotificationService (unit)', () => {
 
   describe('queueNotification', () => {
     it('should enqueue a notification and return a notificationId', async () => {
-      const id = await service.queueNotification(
-        'u1',
-        'TRANSACTION_INITIATED' as never,
-        { amount: 100, currency: 'INR', transactionId: 'txn_1' }
-      );
+      const id = await service.queueNotification('u1', 'TRANSACTION_INITIATED' as never, {
+        amount: 100,
+        currency: 'INR',
+        transactionId: 'txn_1',
+      });
 
       expect(id).toMatch(/^ntf_/);
       expect(mockEnqueueNotification).toHaveBeenCalledTimes(1);

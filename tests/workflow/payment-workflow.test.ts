@@ -32,9 +32,7 @@ const app = getTestApp();
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function getWalletBalance(accessToken: string): Promise<number> {
-  const res = await request(app)
-    .get('/wallets/me')
-    .set('Authorization', `Bearer ${accessToken}`);
+  const res = await request(app).get('/wallets/me').set('Authorization', `Bearer ${accessToken}`);
   return res.body.data.wallet.balance;
 }
 
@@ -171,7 +169,7 @@ describe('Payment Workflow Tests', () => {
       await runFullSaga(bob.user.userId, carol.user.userId, 50, txn3);
 
       expect(await getWalletBalance(alice.accessToken)).toBe(650); // 1000 - 200 - 150
-      expect(await getWalletBalance(bob.accessToken)).toBe(150);   // 200 - 50
+      expect(await getWalletBalance(bob.accessToken)).toBe(150); // 200 - 50
       expect(await getWalletBalance(carol.accessToken)).toBe(200); // 150 + 50
     });
   });
@@ -187,9 +185,9 @@ describe('Payment Workflow Tests', () => {
       const txnId = await initiateTransfer(sender.accessToken, receiver.user.userId, 500);
 
       // Attempt debit — should throw insufficient balance
-      await expect(
-        walletService.debit(sender.user.userId, 500, txnId)
-      ).rejects.toThrow('Insufficient balance');
+      await expect(walletService.debit(sender.user.userId, 500, txnId)).rejects.toThrow(
+        'Insufficient balance'
+      );
 
       // Sender balance should still be 0
       expect(await getWalletBalance(sender.accessToken)).toBe(0);

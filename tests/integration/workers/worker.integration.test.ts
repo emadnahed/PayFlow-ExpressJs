@@ -132,11 +132,9 @@ describe('Worker Integration Tests', () => {
         },
       };
 
-      await notificationQueue.add(
-        `notification:${notification.type}`,
-        notification,
-        { jobId: notification.notificationId }
-      );
+      await notificationQueue.add(`notification:${notification.type}`, notification, {
+        jobId: notification.notificationId,
+      });
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -189,11 +187,9 @@ describe('Worker Integration Tests', () => {
       ];
 
       for (const notification of notifications) {
-        await notificationQueue.add(
-          `notification:${notification.type}`,
-          notification,
-          { jobId: notification.notificationId }
-        );
+        await notificationQueue.add(`notification:${notification.type}`, notification, {
+          jobId: notification.notificationId,
+        });
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -281,7 +277,10 @@ describe('Worker Integration Tests', () => {
 
     it('should track worker events', async () => {
       const completedJobs: Job<NotificationJobData, NotificationJobResult>[] = [];
-      const failedJobs: { job: Job<NotificationJobData, NotificationJobResult> | undefined; error: Error }[] = [];
+      const failedJobs: {
+        job: Job<NotificationJobData, NotificationJobResult> | undefined;
+        error: Error;
+      }[] = [];
 
       notificationWorker = new Worker<NotificationJobData, NotificationJobResult>(
         'test-notification-worker',
@@ -530,8 +529,7 @@ describe('Worker Integration Tests', () => {
       webhookWorker = new Worker<WebhookJobData, WebhookJobResult>(
         'test-webhook-worker',
         async (job) => {
-          processedByEvent[job.data.eventType] =
-            (processedByEvent[job.data.eventType] || 0) + 1;
+          processedByEvent[job.data.eventType] = (processedByEvent[job.data.eventType] || 0) + 1;
           return { success: true, statusCode: 200 };
         },
         { connection: queueConnection }
@@ -580,11 +578,9 @@ describe('Worker Integration Tests', () => {
       const queue = new Queue('lifecycle-test', { connection: queueConnection });
       await queue.obliterate({ force: true });
 
-      const worker = new Worker(
-        'lifecycle-test',
-        async () => ({ success: true }),
-        { connection: queueConnection }
-      );
+      const worker = new Worker('lifecycle-test', async () => ({ success: true }), {
+        connection: queueConnection,
+      });
 
       // Worker should be running initially
       expect(worker.isRunning()).toBe(true);

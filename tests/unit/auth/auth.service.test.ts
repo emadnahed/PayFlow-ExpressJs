@@ -118,11 +118,9 @@ describe('AuthService', () => {
     });
 
     it('should throw ApiError 401 for an expired token', () => {
-      const expiredToken = jwt.sign(
-        { userId: 'u1', email: 'x@x.com' },
-        'test-secret-unit',
-        { expiresIn: '-1s' }
-      );
+      const expiredToken = jwt.sign({ userId: 'u1', email: 'x@x.com' }, 'test-secret-unit', {
+        expiresIn: '-1s',
+      });
 
       expect(() => authService.verifyToken(expiredToken)).toThrow();
     });

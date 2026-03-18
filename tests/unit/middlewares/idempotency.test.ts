@@ -159,7 +159,10 @@ describe('Idempotency Middleware', () => {
 
     it('should use user ID for cache key when authenticated', async () => {
       mockReq.headers = { 'x-idempotency-key': 'user-key' };
-      (mockReq as { user?: { userId: string; email: string } }).user = { userId: 'user_456', email: 'test@example.com' };
+      (mockReq as { user?: { userId: string; email: string } }).user = {
+        userId: 'user_456',
+        email: 'test@example.com',
+      };
 
       await idempotencyMiddleware(mockReq as Request, mockRes as Response, mockNext);
 

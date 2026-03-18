@@ -79,9 +79,18 @@ describe('Notification Event Handlers', () => {
       await registerNotificationEventHandlers();
 
       expect(mockSubscribe).toHaveBeenCalledTimes(4);
-      expect(mockSubscribe).toHaveBeenCalledWith(EventType.TRANSACTION_INITIATED, expect.any(Function));
-      expect(mockSubscribe).toHaveBeenCalledWith(EventType.TRANSACTION_COMPLETED, expect.any(Function));
-      expect(mockSubscribe).toHaveBeenCalledWith(EventType.TRANSACTION_FAILED, expect.any(Function));
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        EventType.TRANSACTION_INITIATED,
+        expect.any(Function)
+      );
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        EventType.TRANSACTION_COMPLETED,
+        expect.any(Function)
+      );
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        EventType.TRANSACTION_FAILED,
+        expect.any(Function)
+      );
       expect(mockSubscribe).toHaveBeenCalledWith(EventType.CREDIT_SUCCESS, expect.any(Function));
     });
 
@@ -273,7 +282,13 @@ describe('Notification Event Handlers', () => {
         payload: { receiverId: 'u2', amount: 300 },
       });
 
-      expect(mockNotifyCreditReceived).toHaveBeenCalledWith('u2', 'PayFlow User', 300, 'INR', 'txn_1');
+      expect(mockNotifyCreditReceived).toHaveBeenCalledWith(
+        'u2',
+        'PayFlow User',
+        300,
+        'INR',
+        'txn_1'
+      );
     });
 
     it('should not notify when transaction is not found', async () => {

@@ -16,7 +16,6 @@ import {
   deliveryLogsValidation,
 } from './webhook.validation';
 
-
 const router = Router();
 
 // All webhook routes require authentication

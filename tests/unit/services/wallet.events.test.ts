@@ -61,14 +61,8 @@ describe('Wallet Event Handlers', () => {
         EventType.TRANSACTION_INITIATED,
         expect.any(Function)
       );
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        EventType.REFUND_REQUESTED,
-        expect.any(Function)
-      );
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        EventType.DEBIT_SUCCESS,
-        expect.any(Function)
-      );
+      expect(mockSubscribe).toHaveBeenCalledWith(EventType.REFUND_REQUESTED, expect.any(Function));
+      expect(mockSubscribe).toHaveBeenCalledWith(EventType.DEBIT_SUCCESS, expect.any(Function));
     });
 
     it('should throw error if subscription fails', async () => {

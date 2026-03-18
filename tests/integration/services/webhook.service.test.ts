@@ -204,9 +204,7 @@ describe('Webhook Service Integration Tests', () => {
     });
 
     it('should throw error for non-existent webhook', async () => {
-      await expect(
-        webhookService.getWebhook('whk_nonexistent', testUserId)
-      ).rejects.toThrow();
+      await expect(webhookService.getWebhook('whk_nonexistent', testUserId)).rejects.toThrow();
     });
 
     it('should throw error when accessing other users webhook', async () => {
@@ -215,9 +213,7 @@ describe('Webhook Service Integration Tests', () => {
         events: [EventType.TRANSACTION_COMPLETED],
       });
 
-      await expect(
-        webhookService.getWebhook(created.webhookId, 'other_user')
-      ).rejects.toThrow();
+      await expect(webhookService.getWebhook(created.webhookId, 'other_user')).rejects.toThrow();
     });
   });
 
@@ -232,21 +228,17 @@ describe('Webhook Service Integration Tests', () => {
     });
 
     it('should update webhook URL', async () => {
-      const updated = await webhookService.updateWebhook(
-        webhook.webhookId,
-        testUserId,
-        { url: 'https://example.com/new-webhook' }
-      );
+      const updated = await webhookService.updateWebhook(webhook.webhookId, testUserId, {
+        url: 'https://example.com/new-webhook',
+      });
 
       expect(updated.url).toBe('https://example.com/new-webhook');
     });
 
     it('should update webhook events', async () => {
-      const updated = await webhookService.updateWebhook(
-        webhook.webhookId,
-        testUserId,
-        { events: [EventType.TRANSACTION_FAILED, EventType.CREDIT_SUCCESS] }
-      );
+      const updated = await webhookService.updateWebhook(webhook.webhookId, testUserId, {
+        events: [EventType.TRANSACTION_FAILED, EventType.CREDIT_SUCCESS],
+      });
 
       expect(updated.events).toHaveLength(2);
       expect(updated.events).toContain(EventType.TRANSACTION_FAILED);
@@ -254,11 +246,9 @@ describe('Webhook Service Integration Tests', () => {
     });
 
     it('should deactivate webhook', async () => {
-      const updated = await webhookService.updateWebhook(
-        webhook.webhookId,
-        testUserId,
-        { isActive: false }
-      );
+      const updated = await webhookService.updateWebhook(webhook.webhookId, testUserId, {
+        isActive: false,
+      });
 
       expect(updated.isActive).toBe(false);
     });
@@ -270,11 +260,9 @@ describe('Webhook Service Integration Tests', () => {
         { $set: { failureCount: 5, isActive: false } }
       );
 
-      const updated = await webhookService.updateWebhook(
-        webhook.webhookId,
-        testUserId,
-        { isActive: true }
-      );
+      const updated = await webhookService.updateWebhook(webhook.webhookId, testUserId, {
+        isActive: true,
+      });
 
       expect(updated.isActive).toBe(true);
       expect(updated.failureCount).toBe(0);
@@ -290,9 +278,7 @@ describe('Webhook Service Integration Tests', () => {
 
       await webhookService.deleteWebhook(webhook.webhookId, testUserId);
 
-      await expect(
-        webhookService.getWebhook(webhook.webhookId, testUserId)
-      ).rejects.toThrow();
+      await expect(webhookService.getWebhook(webhook.webhookId, testUserId)).rejects.toThrow();
     });
 
     it('should not allow deleting other users webhook', async () => {
@@ -301,9 +287,7 @@ describe('Webhook Service Integration Tests', () => {
         events: [EventType.TRANSACTION_COMPLETED],
       });
 
-      await expect(
-        webhookService.deleteWebhook(webhook.webhookId, 'other_user')
-      ).rejects.toThrow();
+      await expect(webhookService.deleteWebhook(webhook.webhookId, 'other_user')).rejects.toThrow();
     });
   });
 
@@ -332,45 +316,36 @@ describe('Webhook Service Integration Tests', () => {
     });
 
     it('should get delivery logs for webhook', async () => {
-      const result = await webhookService.getDeliveryLogs(
-        webhook.webhookId,
-        testUserId
-      );
+      const result = await webhookService.getDeliveryLogs(webhook.webhookId, testUserId);
 
       expect(result.deliveries.length).toBe(5);
       expect(result.total).toBe(5);
     });
 
     it('should filter logs by status', async () => {
-      const successful = await webhookService.getDeliveryLogs(
-        webhook.webhookId,
-        testUserId,
-        { status: 'SUCCESS' }
-      );
+      const successful = await webhookService.getDeliveryLogs(webhook.webhookId, testUserId, {
+        status: 'SUCCESS',
+      });
 
       expect(successful.deliveries.length).toBe(3);
 
-      const failed = await webhookService.getDeliveryLogs(
-        webhook.webhookId,
-        testUserId,
-        { status: 'FAILED' }
-      );
+      const failed = await webhookService.getDeliveryLogs(webhook.webhookId, testUserId, {
+        status: 'FAILED',
+      });
 
       expect(failed.deliveries.length).toBe(2);
     });
 
     it('should paginate delivery logs', async () => {
-      const page1 = await webhookService.getDeliveryLogs(
-        webhook.webhookId,
-        testUserId,
-        { limit: 2, offset: 0 }
-      );
+      const page1 = await webhookService.getDeliveryLogs(webhook.webhookId, testUserId, {
+        limit: 2,
+        offset: 0,
+      });
 
-      const page2 = await webhookService.getDeliveryLogs(
-        webhook.webhookId,
-        testUserId,
-        { limit: 2, offset: 2 }
-      );
+      const page2 = await webhookService.getDeliveryLogs(webhook.webhookId, testUserId, {
+        limit: 2,
+        offset: 2,
+      });
 
       expect(page1.deliveries.length).toBe(2);
       expect(page2.deliveries.length).toBe(2);
@@ -485,8 +460,14 @@ describe('Webhook Service Integration Tests', () => {
       const payload = { event: 'TEST', data: 123 };
       const secret = 'consistent-secret';
 
-      const sig1 = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
-      const sig2 = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+      const sig1 = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+      const sig2 = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
 
       expect(sig1).toBe(sig2);
     });
@@ -494,8 +475,14 @@ describe('Webhook Service Integration Tests', () => {
     it('should produce different signatures for different secrets', () => {
       const payload = { event: 'TEST', data: 123 };
 
-      const sig1 = crypto.createHmac('sha256', 'secret1').update(JSON.stringify(payload)).digest('hex');
-      const sig2 = crypto.createHmac('sha256', 'secret2').update(JSON.stringify(payload)).digest('hex');
+      const sig1 = crypto
+        .createHmac('sha256', 'secret1')
+        .update(JSON.stringify(payload))
+        .digest('hex');
+      const sig2 = crypto
+        .createHmac('sha256', 'secret2')
+        .update(JSON.stringify(payload))
+        .digest('hex');
 
       expect(sig1).not.toBe(sig2);
     });

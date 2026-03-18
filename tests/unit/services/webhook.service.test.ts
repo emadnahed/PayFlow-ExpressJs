@@ -182,9 +182,9 @@ describe('WebhookService (unit)', () => {
     it('should throw 400 for invalid URL on update', async () => {
       mockWebhookFindOne.mockResolvedValue(makeWebhook());
 
-      await expect(
-        service.updateWebhook('wh_1', 'u1', { url: 'not-a-url' })
-      ).rejects.toThrow('Invalid webhook URL');
+      await expect(service.updateWebhook('wh_1', 'u1', { url: 'not-a-url' })).rejects.toThrow(
+        'Invalid webhook URL'
+      );
     });
 
     it('should reset failureCount when re-enabling webhook', async () => {
@@ -245,11 +245,10 @@ describe('WebhookService (unit)', () => {
       mockWebhookFind.mockResolvedValue(webhooks);
       mockDeliveryCreate.mockResolvedValue({ deliveryId: 'd1' });
 
-      const count = await service.triggerWebhooks(
-        EventType.TRANSACTION_COMPLETED,
-        'txn_1',
-        { transactionId: 'txn_1', amount: 100 } as never
-      );
+      const count = await service.triggerWebhooks(EventType.TRANSACTION_COMPLETED, 'txn_1', {
+        transactionId: 'txn_1',
+        amount: 100,
+      } as never);
 
       expect(count).toBe(2);
       expect(mockEnqueueWebhookDelivery).toHaveBeenCalledTimes(2);

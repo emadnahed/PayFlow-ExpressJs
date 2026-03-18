@@ -123,11 +123,9 @@ describe('Notification Queue', () => {
 
       await enqueueNotification(jobData);
 
-      expect(mockAdd).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(Object),
-        { jobId: 'unique-notification-id' }
-      );
+      expect(mockAdd).toHaveBeenCalledWith(expect.any(String), expect.any(Object), {
+        jobId: 'unique-notification-id',
+      });
     });
 
     it('should support all notification types', async () => {

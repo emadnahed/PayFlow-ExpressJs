@@ -47,8 +47,8 @@ export const isLocalDev = process.env.LOCAL_DEV === 'true';
 export const BASE_API_URL = isProduction
   ? 'https://api.payflow.com/v1' // TODO: Replace with actual production URL
   : isTest
-  ? 'http://localhost:3001/v1'
-  : 'http://localhost:3000/v1';
+    ? 'http://localhost:3001/v1'
+    : 'http://localhost:3000/v1';
 
 /**
  * Base API URL v2 (for future API versions)
@@ -57,8 +57,8 @@ export const BASE_API_URL = isProduction
 export const BASE_API_URL_V2 = isProduction
   ? 'https://api.payflow.com/v2' // TODO: Replace with actual production URL
   : isTest
-  ? 'http://localhost:3001/v2'
-  : 'http://localhost:3000/v2';
+    ? 'http://localhost:3001/v2'
+    : 'http://localhost:3000/v2';
 
 /**
  * Internal service URLs (for microservice communication)
@@ -66,8 +66,8 @@ export const BASE_API_URL_V2 = isProduction
 export const INTERNAL_SERVICE_URL = isLocalDev
   ? 'http://localhost:3000'
   : isProduction
-  ? 'https://internal.payflow.com' // TODO: Replace with actual internal URL
-  : 'http://localhost:3000';
+    ? 'https://internal.payflow.com' // TODO: Replace with actual internal URL
+    : 'http://localhost:3000';
 
 // =============================================================================
 // DATABASE CONFIGURATION
@@ -78,8 +78,6 @@ export const INTERNAL_SERVICE_URL = isLocalDev
  */
 export const MONGODB_URI = isProduction
   ? process.env.MONGODB_URI || 'mongodb://mongodb:27017/payflow' // TODO: Replace with production cluster URI
-  : isTest
-  ? process.env.MONGODB_URI || 'mongodb://localhost:27018/payflow-test'
   : process.env.MONGODB_URI || 'mongodb://localhost:27017/payflow';
 
 /**
@@ -106,10 +104,7 @@ export const REDIS_HOST = isProduction
 /**
  * Redis port by environment
  */
-export const REDIS_PORT = parseInt(
-  process.env.REDIS_PORT || (isTest ? '6380' : '6379'),
-  10
-);
+export const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 
 /**
  * Redis password (production only)
@@ -160,8 +155,8 @@ export const JWT_CONFIG = {
 export const BCRYPT_ROUNDS = isProduction
   ? parseInt(process.env.BCRYPT_ROUNDS || '12', 10) // ~640ms per hash
   : isTest
-  ? 4 // Fast for tests
-  : parseInt(process.env.BCRYPT_ROUNDS || '10', 10); // ~160ms per hash
+    ? 4 // Fast for tests
+    : parseInt(process.env.BCRYPT_ROUNDS || '10', 10); // ~160ms per hash
 
 // =============================================================================
 // RATE LIMITING CONFIGURATION
@@ -197,8 +192,8 @@ export const RATE_LIMIT_CONFIG = {
     maxRequests: isProduction
       ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
       : isTest
-      ? 10000 // Very lenient for tests
-      : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10),
+        ? 10000 // Very lenient for tests
+        : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10),
   },
 
   // Auth rate limiter (login, register)
@@ -207,8 +202,8 @@ export const RATE_LIMIT_CONFIG = {
     maxRequests: isProduction
       ? parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5', 10) // Strict in production
       : isTest
-      ? 10000 // Very lenient for tests
-      : parseInt(process.env.AUTH_RATE_LIMIT_MAX || '100', 10), // Lenient in dev
+        ? 10000 // Very lenient for tests
+        : parseInt(process.env.AUTH_RATE_LIMIT_MAX || '100', 10), // Lenient in dev
   },
 
   // Transaction rate limiter
@@ -217,8 +212,8 @@ export const RATE_LIMIT_CONFIG = {
     maxRequests: isProduction
       ? parseInt(process.env.TX_RATE_LIMIT_MAX || '10', 10)
       : isTest
-      ? 10000
-      : parseInt(process.env.TX_RATE_LIMIT_MAX || '100', 10),
+        ? 10000
+        : parseInt(process.env.TX_RATE_LIMIT_MAX || '100', 10),
   },
 
   // API rate limiter (general API calls)
@@ -227,8 +222,8 @@ export const RATE_LIMIT_CONFIG = {
     maxRequests: isProduction
       ? parseInt(process.env.API_RATE_LIMIT_MAX || '30', 10)
       : isTest
-      ? 10000
-      : parseInt(process.env.API_RATE_LIMIT_MAX || '300', 10),
+        ? 10000
+        : parseInt(process.env.API_RATE_LIMIT_MAX || '300', 10),
   },
 
   // Webhook rate limiter
@@ -237,8 +232,8 @@ export const RATE_LIMIT_CONFIG = {
     maxRequests: isProduction
       ? parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '10', 10)
       : isTest
-      ? 10000
-      : parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '100', 10),
+        ? 10000
+        : parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '100', 10),
   },
 
   skipFailedRequests: !isProduction,
@@ -384,22 +379,16 @@ export const SECURITY_CONFIG = {
  * Call this during app startup in production
  */
 export const validateProductionEnv = (): void => {
-  if (!isProduction) { return; }
+  if (!isProduction) {
+    return;
+  }
 
-  const required = [
-    'JWT_SECRET',
-    'MONGODB_URI',
-    'REDIS_HOST',
-    'REDIS_PASSWORD',
-    'CORS_ORIGINS',
-  ];
+  const required = ['JWT_SECRET', 'MONGODB_URI', 'REDIS_HOST', 'REDIS_PASSWORD', 'CORS_ORIGINS'];
 
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables for production: ${missing.join(', ')}`
-    );
+    throw new Error(`Missing required environment variables for production: ${missing.join(', ')}`);
   }
 
   // Validate JWT_SECRET strength

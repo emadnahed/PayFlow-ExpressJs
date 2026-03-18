@@ -10,7 +10,6 @@ import {
   listTransactionsValidation,
 } from './transaction.validation';
 
-
 const router = Router();
 
 // All transaction routes require authentication

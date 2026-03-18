@@ -13,7 +13,10 @@ jest.mock('../../../src/config', () => ({
 // ── Import ────────────────────────────────────────────────────────────────────
 
 // The module exports a singleton; we import both and reset() between tests.
-import { SimulatedFailureError, ledgerSimulation } from '../../../src/services/ledger/ledger.simulation';
+import {
+  SimulatedFailureError,
+  ledgerSimulation,
+} from '../../../src/services/ledger/ledger.simulation';
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -192,9 +195,8 @@ describe('LedgerSimulation (unit)', () => {
         logger: { warn: jest.fn(), debug: jest.fn(), info: jest.fn(), error: jest.fn() },
       }));
 
-      const { ledgerSimulation: prodSim } = await import(
-        '../../../src/services/ledger/ledger.simulation'
-      );
+      const { ledgerSimulation: prodSim } =
+        await import('../../../src/services/ledger/ledger.simulation');
 
       // enable() should be blocked in production
       prodSim.enable({ failureRate: 1 });
@@ -210,9 +212,8 @@ describe('LedgerSimulation (unit)', () => {
         logger: { warn: jest.fn(), debug: jest.fn(), info: jest.fn(), error: jest.fn() },
       }));
 
-      const { ledgerSimulation: prodSim } = await import(
-        '../../../src/services/ledger/ledger.simulation'
-      );
+      const { ledgerSimulation: prodSim } =
+        await import('../../../src/services/ledger/ledger.simulation');
 
       // addFailingTransactionIds() should be a no-op in production
       prodSim.addFailingTransactionIds(['txn_prod']);
