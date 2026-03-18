@@ -65,14 +65,15 @@ jobs:
         run: npm ci
 
       - name: Run unit tests with coverage
-        run: jest --runInBand tests/unit --coverage
+        run: npx jest --runInBand tests/unit --coverage
         env:
           NODE_ENV: test
           TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_EXPIRES_IN: 1h
+          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
+          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -117,14 +118,15 @@ jobs:
         run: npm ci
 
       - name: Run integration tests
-        run: jest --runInBand tests/integration --detectOpenHandles --forceExit
+        run: npx jest --runInBand tests/integration --detectOpenHandles --forceExit
         env:
           NODE_ENV: test
           TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_EXPIRES_IN: 1h
+          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
+          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
   e2e:
     name: E2E Tests
@@ -161,14 +163,15 @@ jobs:
         run: npm ci
 
       - name: Run E2E tests
-        run: jest --runInBand tests/e2e --detectOpenHandles --forceExit
+        run: npx jest --runInBand tests/e2e --detectOpenHandles --forceExit
         env:
           NODE_ENV: test
           TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_EXPIRES_IN: 1h
+          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
+          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
   chaos:
     name: Chaos Tests
@@ -205,14 +208,15 @@ jobs:
         run: npm ci
 
       - name: Run chaos tests
-        run: jest --runInBand tests/chaos --detectOpenHandles --forceExit
+        run: npx jest --runInBand tests/chaos --detectOpenHandles --forceExit
         env:
           NODE_ENV: test
           TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_EXPIRES_IN: 1h
+          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
+          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
   build:
     name: Build
