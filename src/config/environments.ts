@@ -384,7 +384,7 @@ export const SECURITY_CONFIG = {
  * Call this during app startup in production
  */
 export const validateProductionEnv = (): void => {
-  if (!isProduction) return;
+  if (!isProduction) { return; }
 
   const required = [
     'JWT_SECRET',

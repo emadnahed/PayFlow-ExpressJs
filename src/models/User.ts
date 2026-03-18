@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+
 import { hashPassword, comparePassword } from '../utils/bcrypt';
 
 export interface IUser extends Document {

@@ -14,6 +14,7 @@
     "test:verbose": "jest --runInBand --detectOpenHandles --verbose",
     "test:coverage": "jest --runInBand --coverage",
     "test:ci": "jest --runInBand --detectOpenHandles --forceExit --coverage",
+    "test:all": "./scripts/test-all.sh",
     "test:unit": "jest --runInBand tests/unit",
     "test:integration": "jest --runInBand tests/integration",
     "test:e2e": "jest --runInBand tests/e2e",

@@ -68,9 +68,9 @@ jobs:
         run: jest --runInBand tests/unit --coverage
         env:
           NODE_ENV: test
-          MONGODB_URI: mongodb://localhost:27017/payflow_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
+          TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
+          TEST_REDIS_HOST: localhost
+          TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
           JWT_EXPIRES_IN: 1h
 
@@ -120,9 +120,9 @@ jobs:
         run: jest --runInBand tests/integration --detectOpenHandles --forceExit
         env:
           NODE_ENV: test
-          MONGODB_URI: mongodb://localhost:27017/payflow_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
+          TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
+          TEST_REDIS_HOST: localhost
+          TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
           JWT_EXPIRES_IN: 1h
 
@@ -164,9 +164,9 @@ jobs:
         run: jest --runInBand tests/e2e --detectOpenHandles --forceExit
         env:
           NODE_ENV: test
-          MONGODB_URI: mongodb://localhost:27017/payflow_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
+          TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
+          TEST_REDIS_HOST: localhost
+          TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
           JWT_EXPIRES_IN: 1h
 
@@ -208,9 +208,9 @@ jobs:
         run: jest --runInBand tests/chaos --detectOpenHandles --forceExit
         env:
           NODE_ENV: test
-          MONGODB_URI: mongodb://localhost:27017/payflow_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
+          TEST_MONGODB_URI: mongodb://localhost:27017/payflow_test
+          TEST_REDIS_HOST: localhost
+          TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
           JWT_EXPIRES_IN: 1h
 

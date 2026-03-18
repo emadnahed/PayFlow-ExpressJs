@@ -1,7 +1,9 @@
-import { Worker } from 'worker_threads';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { Worker } from 'worker_threads';
+
 import bcrypt from 'bcryptjs';
+
 import { config } from '../config';
 
 interface WorkerResult {
@@ -41,8 +43,7 @@ function createWorker(): PoolWorker {
     busy: false,
   };
 
-  worker.on('error', (error) => {
-    console.error('Bcrypt worker error:', error);
+  worker.on('error', () => {
     // Replace the failed worker
     const index = workerPool.indexOf(poolWorker);
     if (index !== -1) {
@@ -53,7 +54,6 @@ function createWorker(): PoolWorker {
 
   worker.on('exit', (code) => {
     if (code !== 0) {
-      console.error(`Bcrypt worker exited with code ${code}`);
       // Replace the exited worker
       const index = workerPool.indexOf(poolWorker);
       if (index !== -1) {
@@ -67,7 +67,7 @@ function createWorker(): PoolWorker {
 }
 
 function initializePool(): void {
-  if (poolInitialized || !isProduction) return;
+  if (poolInitialized || !isProduction) { return; }
 
   for (let i = 0; i < POOL_SIZE; i++) {
     workerPool.push(createWorker());
@@ -76,10 +76,10 @@ function initializePool(): void {
 }
 
 function processNextTask(): void {
-  if (taskQueue.length === 0) return;
+  if (taskQueue.length === 0) { return; }
 
   const availableWorker = workerPool.find((w) => !w.busy);
-  if (!availableWorker) return;
+  if (!availableWorker) { return; }
 
   const task = taskQueue.shift()!;
   availableWorker.busy = true;

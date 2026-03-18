@@ -65,7 +65,7 @@ const noopLimiter = (_req: Request, _res: Response, next: NextFunction) => next(
  * Check if request has valid load test bypass header
  */
 const hasValidBypassHeader = (req: Request): boolean => {
-  if (!RATE_LIMIT_CONFIG.loadTestSecret) return false;
+  if (!RATE_LIMIT_CONFIG.loadTestSecret) { return false; }
   const token = req.get('X-Load-Test-Token');
   return token === RATE_LIMIT_CONFIG.loadTestSecret;
 };
