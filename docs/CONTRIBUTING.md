@@ -296,13 +296,14 @@ import { logger } from '../../observability/logger';
 import { metrics } from '../../observability/metrics';
 
 export class NewFeatureService {
-  async performAction(data: ActionData): Promise<ActionResult> {
+  async performAction(data: YourActionData): Promise<YourActionResult> {
     const timer = metrics.startTimer('new_feature_action');
 
     try {
       logger.info({ action: 'new_feature.action', data }, 'Starting action');
 
       // Business logic here
+      const result: YourActionResult = { success: true };
 
       metrics.incrementCounter('new_feature_success');
       return result;

@@ -37,9 +37,9 @@ X-Idempotency-Key: unique-request-id-123
 
 | Range | Category | Examples |
 |-------|----------|----------|
-| 1xxx | Authentication | 1001: Unauthorized, 1002: Token expired, 1005: Forbidden |
-| 2xxx | Validation | 2001: Invalid input, 2002: Missing field, 2003: Invalid format |
-| 3xxx | Business Logic | 3001: Insufficient balance, 3002: User not found, 3006: Duplicate |
+| 1xxx | Authentication | 1001: UNAUTHORIZED, 1002: TOKEN_EXPIRED, 1005: FORBIDDEN |
+| 2xxx | Validation | 2001: VALIDATION_ERROR, 2002: MISSING_FIELD, 2003: INVALID_INPUT |
+| 3xxx | Business Logic | 3001: INSUFFICIENT_BALANCE, 3002: USER_NOT_FOUND, 3006: DUPLICATE_RESOURCE |
 | 4xxx | Rate Limiting | 4001: Too many requests |
 | 5xxx | System | 5001: Internal error |
 

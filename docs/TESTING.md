@@ -1084,7 +1084,7 @@ k6 run -e ENV=production -e API_URL=https://api.example.com -e LOAD_TEST_TOKEN=y
 
 ```bash
 # Run test with JSON output
-k6 run --out json=results/test_results.json tests/load/api.test.js
+k6 run --out json=results/test_results.json load-testing/tests/load/api.test.js
 
 # Generate HTML report
 node scripts/generate-report.js results/test_results.json
@@ -1106,7 +1106,7 @@ See [load-testing/README.md](../load-testing/README.md) for complete documentati
 ### Sample k6 Test
 
 ```javascript
-// tests/load/api.test.js
+// load-testing/tests/load/api.test.js
 import { check, group, sleep } from 'k6';
 import http from 'k6/http';
 

@@ -24,7 +24,10 @@ jobs:
       - name: Set test type based on schedule
         id: set-type
         run: |
-          # Get current hour and day
+          # This script maps the cron schedule to a test type:
+          # - Sunday at 03:00 UTC  -> soak test  (cron: '0 3 * * 0')
+          # - Daily  at 02:00 UTC  -> load test  (cron: '0 2 * * *')
+          # - All other runs (every 6 hours)      -> smoke test
           HOUR=$(date -u +%H)
           DAY=$(date -u +%u)  # 1=Monday, 7=Sunday
 
