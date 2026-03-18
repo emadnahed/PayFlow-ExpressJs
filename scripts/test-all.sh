@@ -64,11 +64,15 @@ _row_c() {   # col1  col2  col3  ansi-color
 run_suite() {
   local label="$1" path="$2"
   local tmpfile; tmpfile=$(mktemp)
+  local jsonfile; jsonfile=$(mktemp)
+  trap 'rm -f -- "$tmpfile" "$jsonfile"' RETURN
 
   printf '\n\033[1m════  %s  ════\033[0m\n' "$label"
 
-  # Run jest: show output live AND capture it for parsing
-  npx jest --runInBand "$path" --detectOpenHandles --forceExit 2>&1 | tee "$tmpfile"
+  # Run jest: show output live AND capture it for connection-error detection;
+  # also write structured JSON for reliable result parsing.
+  npx jest --runInBand "$path" --detectOpenHandles --forceExit \
+    --json --outputFile="$jsonfile" 2>&1 | tee "$tmpfile"
   local rc=${PIPESTATUS[0]}
 
   # ── Docker / infrastructure unavailable? ──────────────────────────────────
@@ -77,31 +81,27 @@ run_suite() {
     SUITE_TESTS='—'
     SUITE_STATUS='Docker not running'
     SUITE_COLOR='\033[1;33m'   # yellow
-    rm "$tmpfile"
     return
   fi
 
-  # ── Parse Jest summary ────────────────────────────────────────────────────
+  # ── Parse Jest summary from JSON ──────────────────────────────────────────
   local total_tests passed_suites failed_tests
-  total_tests=$(grep '^Tests:' "$tmpfile" | tail -1 \
-    | sed 's/.*[^0-9]\([0-9][0-9]*\) total.*/\1/')
-  passed_suites=$(grep '^Test Suites:' "$tmpfile" | tail -1 \
-    | sed 's/.*[^0-9]\([0-9][0-9]*\) passed.*/\1/')
-  failed_tests=$(grep '^Tests:' "$tmpfile" | tail -1 \
-    | sed -n 's/.*[^0-9]\([0-9][0-9]*\) failed.*/\1/p')
+  total_tests=$(jq '.numTotalTests'        "$jsonfile" 2>/dev/null)
+  passed_suites=$(jq '.numPassedTestSuites' "$jsonfile" 2>/dev/null)
+  failed_tests=$(jq '.numFailedTests'      "$jsonfile" 2>/dev/null)
 
   SUITE_LABEL="$label"
 
-  if [ "$rc" -eq 0 ] && [ -n "$total_tests" ]; then
+  if [ "$rc" -eq 0 ] && [ -n "$total_tests" ] && [ "$total_tests" != "null" ]; then
     SUITE_TESTS="$total_tests"
     # Annotate with suite count when > 1 (e.g. "Unit (41 suites)")
-    if [ -n "$passed_suites" ] && [ "$passed_suites" -gt 1 ]; then
+    if [ -n "$passed_suites" ] && [ "$passed_suites" != "null" ] && [ "$passed_suites" -gt 1 ]; then
       SUITE_LABEL="${label} (${passed_suites} suites)"
     fi
     SUITE_STATUS='All passed'
     SUITE_COLOR='\033[0;32m'   # green
     OVERALL_PASS=$((OVERALL_PASS + 1))
-  elif [ -n "$total_tests" ]; then
+  elif [ -n "$total_tests" ] && [ "$total_tests" != "null" ]; then
     SUITE_TESTS="$total_tests"
     SUITE_STATUS="${failed_tests:-?} test(s) failed"
     SUITE_COLOR='\033[0;31m'   # red
@@ -111,8 +111,6 @@ run_suite() {
     SUITE_STATUS='No tests found'
     SUITE_COLOR='\033[0;33m'   # yellow
   fi
-
-  rm "$tmpfile"
 }
 
 # ── Accumulators ─────────────────────────────────────────────────────────────
