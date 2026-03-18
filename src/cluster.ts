@@ -1,5 +1,6 @@
 import cluster from 'cluster';
 import os from 'os';
+
 import { logger } from './observability';
 
 const numCPUsFromEnv = parseInt(process.env.CLUSTER_WORKERS || '', 10);
@@ -26,5 +27,5 @@ if (cluster.isPrimary) {
   });
 } else {
   // Workers run the server
-  require('./server');
+  void import('./server');
 }

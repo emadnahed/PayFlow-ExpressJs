@@ -12,12 +12,8 @@ jest.mock('../../../src/config', () => ({
 
 // ── Import ────────────────────────────────────────────────────────────────────
 
-import { SimulatedFailureError } from '../../../src/services/ledger/ledger.simulation';
-
-// Import the class directly (not the singleton) so we can control state per test
-// The module exports a singleton; we need to reset it between tests
-// We'll import the singleton and reset() it each time.
-import { ledgerSimulation } from '../../../src/services/ledger/ledger.simulation';
+// The module exports a singleton; we import both and reset() between tests.
+import { SimulatedFailureError, ledgerSimulation } from '../../../src/services/ledger/ledger.simulation';
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

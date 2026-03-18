@@ -33,7 +33,7 @@ jest.mock('rate-limit-redis', () => ({
 }));
 
 // Mutable config — lets us test disabled mode and bypass secret
-let mockIsTest = true;
+const mockIsTest = true;
 let mockRateLimitDisabled = false;
 let mockLoadTestSecret = 'secret-token';
 

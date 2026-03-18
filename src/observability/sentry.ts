@@ -22,7 +22,7 @@ export const initSentry = (): void => {
 };
 
 export const captureSentryException = (err: Error, context?: { correlationId?: string }): void => {
-  if (!initialized) return;
+  if (!initialized) { return; }
 
   Sentry.withScope((scope) => {
     if (context?.correlationId) {
@@ -33,7 +33,7 @@ export const captureSentryException = (err: Error, context?: { correlationId?: s
 };
 
 export const setSentryUser = (userId: string): void => {
-  if (!initialized) return;
+  if (!initialized) { return; }
 
   Sentry.getCurrentScope().setUser({ id: userId });
 };
