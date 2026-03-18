@@ -72,8 +72,6 @@ jobs:
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
-          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -125,8 +123,6 @@ jobs:
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
-          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
   e2e:
     name: E2E Tests
@@ -170,8 +166,6 @@ jobs:
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
-          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
   chaos:
     name: Chaos Tests
@@ -215,8 +209,6 @@ jobs:
           TEST_REDIS_HOST: localhost
           TEST_REDIS_PORT: '6379'
           JWT_SECRET: test-secret-key-for-ci
-          JWT_ACCESS_TOKEN_EXPIRES_IN: 15m
-          JWT_REFRESH_TOKEN_EXPIRES_IN: 7d
 
   build:
     name: Build

@@ -154,9 +154,9 @@ describe('Wallet Service Integration Tests', () => {
     });
 
     it('should reject debit when insufficient balance', async () => {
-      await expect(
-        walletService.debit(testUserId, 1500, 'txn_insufficient')
-      ).rejects.toThrow('Insufficient balance');
+      await expect(walletService.debit(testUserId, 1500, 'txn_insufficient')).rejects.toThrow(
+        'Insufficient balance'
+      );
     });
 
     it('should debit exact balance amount', async () => {
@@ -192,9 +192,9 @@ describe('Wallet Service Integration Tests', () => {
     });
 
     it('should fail debit for non-existent wallet', async () => {
-      await expect(
-        walletService.debit('non_existent_user', 100, 'txn_no_wallet')
-      ).rejects.toThrow('Wallet not found');
+      await expect(walletService.debit('non_existent_user', 100, 'txn_no_wallet')).rejects.toThrow(
+        'Wallet not found'
+      );
     });
   });
 

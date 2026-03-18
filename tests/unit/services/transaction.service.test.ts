@@ -76,7 +76,11 @@ describe('TransactionService (unit)', () => {
       });
 
       expect(mockTransactionCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ senderId: 'user_sender', receiverId: 'user_receiver', amount: 100 })
+        expect.objectContaining({
+          senderId: 'user_sender',
+          receiverId: 'user_receiver',
+          amount: 100,
+        })
       );
       expect(mockPublish).toHaveBeenCalledWith(
         expect.objectContaining({ eventType: EventType.TRANSACTION_INITIATED })
@@ -198,9 +202,7 @@ describe('TransactionService (unit)', () => {
       const txn = makeTxn({ status: TransactionStatus.COMPLETED });
       mockTransactionFindOne.mockResolvedValue(txn);
 
-      await expect(
-        service.updateStatus('txn_test123', TransactionStatus.FAILED)
-      ).rejects.toThrow();
+      await expect(service.updateStatus('txn_test123', TransactionStatus.FAILED)).rejects.toThrow();
     });
   });
 
@@ -210,7 +212,9 @@ describe('TransactionService (unit)', () => {
     it('should transition to DEBITED', async () => {
       const txn = makeTxn({ status: TransactionStatus.INITIATED });
       mockTransactionFindOne.mockResolvedValue(txn);
-      mockTransactionFindOneAndUpdate.mockResolvedValue(makeTxn({ status: TransactionStatus.DEBITED }));
+      mockTransactionFindOneAndUpdate.mockResolvedValue(
+        makeTxn({ status: TransactionStatus.DEBITED })
+      );
 
       await service.onDebitSuccess('txn_test123');
 
@@ -226,7 +230,9 @@ describe('TransactionService (unit)', () => {
     it('should transition to FAILED and publish TRANSACTION_FAILED', async () => {
       const txn = makeTxn({ status: TransactionStatus.INITIATED });
       mockTransactionFindOne.mockResolvedValue(txn);
-      mockTransactionFindOneAndUpdate.mockResolvedValue(makeTxn({ status: TransactionStatus.FAILED }));
+      mockTransactionFindOneAndUpdate.mockResolvedValue(
+        makeTxn({ status: TransactionStatus.FAILED })
+      );
 
       await service.onDebitFailed('txn_test123', 'Insufficient balance');
 
@@ -240,7 +246,9 @@ describe('TransactionService (unit)', () => {
     it('should transition to COMPLETED and publish TRANSACTION_COMPLETED', async () => {
       const txn = makeTxn({ status: TransactionStatus.DEBITED });
       mockTransactionFindOne.mockResolvedValue(txn);
-      mockTransactionFindOneAndUpdate.mockResolvedValue(makeTxn({ status: TransactionStatus.COMPLETED }));
+      mockTransactionFindOneAndUpdate.mockResolvedValue(
+        makeTxn({ status: TransactionStatus.COMPLETED })
+      );
 
       await service.onCreditSuccess('txn_test123');
 
@@ -254,7 +262,9 @@ describe('TransactionService (unit)', () => {
     it('should transition to REFUNDING and publish REFUND_REQUESTED', async () => {
       const txn = makeTxn({ status: TransactionStatus.DEBITED });
       mockTransactionFindOne.mockResolvedValue(txn);
-      mockTransactionFindOneAndUpdate.mockResolvedValue(makeTxn({ status: TransactionStatus.REFUNDING }));
+      mockTransactionFindOneAndUpdate.mockResolvedValue(
+        makeTxn({ status: TransactionStatus.REFUNDING })
+      );
 
       await service.onCreditFailed('txn_test123', 'Receiver error');
 
@@ -268,7 +278,9 @@ describe('TransactionService (unit)', () => {
     it('should transition to FAILED and publish TRANSACTION_FAILED', async () => {
       const txn = makeTxn({ status: TransactionStatus.REFUNDING });
       mockTransactionFindOne.mockResolvedValue(txn);
-      mockTransactionFindOneAndUpdate.mockResolvedValue(makeTxn({ status: TransactionStatus.FAILED }));
+      mockTransactionFindOneAndUpdate.mockResolvedValue(
+        makeTxn({ status: TransactionStatus.FAILED })
+      );
 
       await service.onRefundCompleted('txn_test123');
 

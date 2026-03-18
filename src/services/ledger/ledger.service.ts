@@ -18,7 +18,6 @@ import { walletService, CreditResult } from '../wallet/wallet.service';
 
 import { ledgerSimulation, SimulatedFailureError } from './ledger.simulation';
 
-
 export interface CreditRequest {
   transactionId: string;
   receiverId: string;
@@ -68,7 +67,10 @@ export class LedgerService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to get transaction details';
-      logger.error({ transactionId, error: errorMessage }, 'Ledger Service transaction lookup failed');
+      logger.error(
+        { transactionId, error: errorMessage },
+        'Ledger Service transaction lookup failed'
+      );
       return {
         success: false,
         transactionId,
@@ -108,10 +110,7 @@ export class LedgerService {
             ? error.message
             : 'Unknown error during credit';
 
-      logger.error(
-        { transactionId, error: errorMessage },
-        'Ledger Service credit failed'
-      );
+      logger.error({ transactionId, error: errorMessage }, 'Ledger Service credit failed');
 
       // CRITICAL: Always publish CREDIT_FAILED to ensure saga can proceed to compensation.
       // The walletService is not consistent in publishing failure events for all error cases,
@@ -146,10 +145,7 @@ export class LedgerService {
   async processCreditWithDetails(request: CreditRequest): Promise<CreditResponse> {
     const { transactionId, receiverId, amount } = request;
 
-    logger.info(
-      { receiverId, amount, transactionId },
-      'Ledger Service processing direct credit'
-    );
+    logger.info({ receiverId, amount, transactionId }, 'Ledger Service processing direct credit');
 
     try {
       // Check for simulated failure (testing only)

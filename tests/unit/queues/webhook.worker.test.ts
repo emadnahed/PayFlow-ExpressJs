@@ -113,8 +113,14 @@ describe('Webhook Worker', () => {
       const payload1 = { event: 'A' };
       const payload2 = { event: 'B' };
 
-      const sig1 = crypto.createHmac('sha256', secret).update(JSON.stringify(payload1)).digest('hex');
-      const sig2 = crypto.createHmac('sha256', secret).update(JSON.stringify(payload2)).digest('hex');
+      const sig1 = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload1))
+        .digest('hex');
+      const sig2 = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload2))
+        .digest('hex');
 
       expect(sig1).not.toBe(sig2);
     });
@@ -122,8 +128,14 @@ describe('Webhook Worker', () => {
     it('should generate different signatures for different secrets', () => {
       const payload = { event: 'test' };
 
-      const sig1 = crypto.createHmac('sha256', 'secret1').update(JSON.stringify(payload)).digest('hex');
-      const sig2 = crypto.createHmac('sha256', 'secret2').update(JSON.stringify(payload)).digest('hex');
+      const sig1 = crypto
+        .createHmac('sha256', 'secret1')
+        .update(JSON.stringify(payload))
+        .digest('hex');
+      const sig2 = crypto
+        .createHmac('sha256', 'secret2')
+        .update(JSON.stringify(payload))
+        .digest('hex');
 
       expect(sig1).not.toBe(sig2);
     });
@@ -138,9 +150,8 @@ describe('Webhook Worker', () => {
 
     it('should handle long responses', () => {
       const longResponse = 'x'.repeat(2000);
-      const truncated = longResponse.length > 1000
-        ? longResponse.substring(0, 1000) + '...'
-        : longResponse;
+      const truncated =
+        longResponse.length > 1000 ? longResponse.substring(0, 1000) + '...' : longResponse;
 
       expect(truncated.length).toBe(1003); // 1000 + '...'
       expect(truncated.endsWith('...')).toBe(true);
@@ -433,9 +444,7 @@ describe('Webhook Worker', () => {
       const processor = getProcessorFn();
 
       // attemptsMade=0, maxAttempts=3 → NOT last attempt
-      await expect(
-        processor({ ...fakeJob, attemptsMade: 0 })
-      ).rejects.toThrow();
+      await expect(processor({ ...fakeJob, attemptsMade: 0 })).rejects.toThrow();
 
       expect(mockWebhookDelivery.updateOne).toHaveBeenCalledWith(
         { deliveryId: 'd_1' },
@@ -457,9 +466,7 @@ describe('Webhook Worker', () => {
       const processor = getProcessorFn();
 
       // attemptsMade=2, maxAttempts=3 → last attempt (2+1 >= 3)
-      await expect(
-        processor({ ...fakeJob, attemptsMade: 2 })
-      ).rejects.toThrow();
+      await expect(processor({ ...fakeJob, attemptsMade: 2 })).rejects.toThrow();
 
       expect(mockWebhookDelivery.updateOne).toHaveBeenCalledWith(
         { deliveryId: 'd_1' },

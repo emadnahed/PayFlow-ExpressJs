@@ -56,23 +56,27 @@ export const createTestUser = async (
   };
 
   // Use retry logic for Docker environments where API may need warm-up time
-  return withRetry(async () => {
-    const response = await request(app).post('/auth/register').send(defaultUser);
+  return withRetry(
+    async () => {
+      const response = await request(app).post('/auth/register').send(defaultUser);
 
-    if (response.status !== 201) {
-      throw new Error(`Failed to create test user: ${JSON.stringify(response.body)}`);
-    }
+      if (response.status !== 201) {
+        throw new Error(`Failed to create test user: ${JSON.stringify(response.body)}`);
+      }
 
-    return {
-      user: {
-        userId: response.body.data.user.userId,
-        name: response.body.data.user.name,
-        email: response.body.data.user.email,
-      },
-      accessToken: response.body.data.tokens.accessToken,
-      refreshToken: response.body.data.tokens.refreshToken,
-    };
-  }, 3, 1000);
+      return {
+        user: {
+          userId: response.body.data.user.userId,
+          name: response.body.data.user.name,
+          email: response.body.data.user.email,
+        },
+        accessToken: response.body.data.tokens.accessToken,
+        refreshToken: response.body.data.tokens.refreshToken,
+      };
+    },
+    3,
+    1000
+  );
 };
 
 export const getAuthToken = async (

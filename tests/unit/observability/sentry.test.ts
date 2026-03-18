@@ -120,7 +120,8 @@ describe('Sentry observability (unit)', () => {
         getCurrentScope: mockGetCurrentScope,
       }));
 
-      const { initSentry, captureSentryException } = await import('../../../src/observability/sentry');
+      const { initSentry, captureSentryException } =
+        await import('../../../src/observability/sentry');
       initSentry(); // won't initialize (no DSN)
       captureSentryException(new Error('test'));
 
@@ -144,7 +145,8 @@ describe('Sentry observability (unit)', () => {
         getCurrentScope: mockGetCurrentScope,
       }));
 
-      const { initSentry, captureSentryException } = await import('../../../src/observability/sentry');
+      const { initSentry, captureSentryException } =
+        await import('../../../src/observability/sentry');
       initSentry();
 
       const err = new Error('Something broke');
@@ -171,7 +173,8 @@ describe('Sentry observability (unit)', () => {
         getCurrentScope: mockGetCurrentScope,
       }));
 
-      const { initSentry, captureSentryException } = await import('../../../src/observability/sentry');
+      const { initSentry, captureSentryException } =
+        await import('../../../src/observability/sentry');
       initSentry();
 
       captureSentryException(new Error('no context'));

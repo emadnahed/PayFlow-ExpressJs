@@ -143,10 +143,7 @@ describe('EventBus', () => {
       };
 
       await eventBus.publish(event);
-      expect(mockPublish).toHaveBeenCalledWith(
-        EventType.TRANSACTION_INITIATED,
-        expect.any(String)
-      );
+      expect(mockPublish).toHaveBeenCalledWith(EventType.TRANSACTION_INITIATED, expect.any(String));
     });
 
     it('should skip publishing when not connected in test mode', async () => {
@@ -196,9 +193,9 @@ describe('EventBus', () => {
     });
 
     it('should throw error when not connected', async () => {
-      await expect(
-        eventBus.subscribe(EventType.TRANSACTION_INITIATED, jest.fn())
-      ).rejects.toThrow('Event bus not connected');
+      await expect(eventBus.subscribe(EventType.TRANSACTION_INITIATED, jest.fn())).rejects.toThrow(
+        'Event bus not connected'
+      );
     });
   });
 
@@ -236,10 +233,12 @@ describe('EventBus', () => {
         };
         await messageHandler(EventType.TRANSACTION_COMPLETED, JSON.stringify(event));
 
-        expect(handler).toHaveBeenCalledWith(expect.objectContaining({
-          eventType: EventType.TRANSACTION_COMPLETED,
-          transactionId: 'txn_789',
-        }));
+        expect(handler).toHaveBeenCalledWith(
+          expect.objectContaining({
+            eventType: EventType.TRANSACTION_COMPLETED,
+            transactionId: 'txn_789',
+          })
+        );
       }
     });
 
@@ -279,7 +278,10 @@ describe('EventBus', () => {
         await messageHandler(EventType.TRANSACTION_FAILED, JSON.stringify(event));
 
         expect(mockLogger.error).toHaveBeenCalledWith(
-          expect.objectContaining({ err: expect.any(Error), eventType: EventType.TRANSACTION_FAILED }),
+          expect.objectContaining({
+            err: expect.any(Error),
+            eventType: EventType.TRANSACTION_FAILED,
+          }),
           'Error handling event'
         );
       }

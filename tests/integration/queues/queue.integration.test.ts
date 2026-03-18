@@ -62,11 +62,7 @@ describe('Message Queue Integration Tests', () => {
     });
 
     it('should add delayed jobs', async () => {
-      const job = await testQueue.add(
-        'delayed-job',
-        { data: 'later' },
-        { delay: 5000 }
-      );
+      const job = await testQueue.add('delayed-job', { data: 'later' }, { delay: 5000 });
 
       const delayedCount = await testQueue.getDelayedCount();
       expect(delayedCount).toBe(1);
@@ -277,11 +273,9 @@ describe('Message Queue Integration Tests', () => {
         message: 'Your transaction of $100 was successful',
       };
 
-      const job = await notificationQueue.add(
-        `notification:${notification.type}`,
-        notification,
-        { jobId: notification.notificationId }
-      );
+      const job = await notificationQueue.add(`notification:${notification.type}`, notification, {
+        jobId: notification.notificationId,
+      });
 
       expect(job.id).toBe('ntf_test123');
       expect(job.data.userId).toBe('user_123');
@@ -307,11 +301,9 @@ describe('Message Queue Integration Tests', () => {
         message: 'You received $50 from John',
       };
 
-      await notificationQueue.add(
-        `notification:${notification.type}`,
-        notification,
-        { jobId: notification.notificationId }
-      );
+      await notificationQueue.add(`notification:${notification.type}`, notification, {
+        jobId: notification.notificationId,
+      });
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -363,11 +355,9 @@ describe('Message Queue Integration Tests', () => {
         },
       };
 
-      const job = await webhookQueue.add(
-        `webhook:${webhook.eventType}`,
-        webhook,
-        { jobId: webhook.deliveryId }
-      );
+      const job = await webhookQueue.add(`webhook:${webhook.eventType}`, webhook, {
+        jobId: webhook.deliveryId,
+      });
 
       expect(job.id).toBe('dlv_test456');
     });
@@ -395,15 +385,11 @@ describe('Message Queue Integration Tests', () => {
         payload: { event: 'TRANSACTION_FAILED' },
       };
 
-      await webhookQueue.add(
-        `webhook:${webhook.eventType}`,
-        webhook,
-        {
-          jobId: webhook.deliveryId,
-          attempts: 5,
-          backoff: { type: 'fixed', delay: 100 },
-        }
-      );
+      await webhookQueue.add(`webhook:${webhook.eventType}`, webhook, {
+        jobId: webhook.deliveryId,
+        attempts: 5,
+        backoff: { type: 'fixed', delay: 100 },
+      });
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -433,15 +419,11 @@ describe('Message Queue Integration Tests', () => {
         payload: { event: 'DEBIT_SUCCESS' },
       };
 
-      await webhookQueue.add(
-        `webhook:${webhook.eventType}`,
-        webhook,
-        {
-          jobId: webhook.deliveryId,
-          attempts: 5,
-          backoff: { type: 'fixed', delay: 100 },
-        }
-      );
+      await webhookQueue.add(`webhook:${webhook.eventType}`, webhook, {
+        jobId: webhook.deliveryId,
+        attempts: 5,
+        backoff: { type: 'fixed', delay: 100 },
+      });
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -462,19 +444,13 @@ describe('Message Queue Integration Tests', () => {
     });
 
     it('should remove completed jobs based on retention', async () => {
-      const worker = new Worker(
-        'cleanup-test',
-        async () => ({ success: true }),
-        { connection: queueConnection }
-      );
+      const worker = new Worker('cleanup-test', async () => ({ success: true }), {
+        connection: queueConnection,
+      });
 
       // Add jobs with removeOnComplete
       for (let i = 0; i < 10; i++) {
-        await cleanupQueue.add(
-          'cleanup-job',
-          { id: i },
-          { removeOnComplete: { count: 5 } }
-        );
+        await cleanupQueue.add('cleanup-job', { id: i }, { removeOnComplete: { count: 5 } });
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));

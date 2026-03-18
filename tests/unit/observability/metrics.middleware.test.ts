@@ -14,12 +14,14 @@ type MetricsMiddlewareFn = (req: Request, res: Response, next: NextFunction) => 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function buildReq(overrides: Partial<{
-  path: string;
-  method: string;
-  baseUrl: string;
-  route: { path: string };
-}> = {}): Request {
+function buildReq(
+  overrides: Partial<{
+    path: string;
+    method: string;
+    baseUrl: string;
+    route: { path: string };
+  }> = {}
+): Request {
   return {
     path: '/api/test',
     method: 'GET',
@@ -37,7 +39,7 @@ function buildRes(statusCode = 200): Response & { triggerFinish: () => void } {
       if (event === 'finish') listeners.push(cb);
     },
     triggerFinish() {
-      listeners.forEach(fn => fn());
+      listeners.forEach((fn) => fn());
     },
   } as unknown as Response & { triggerFinish: () => void };
 }
@@ -128,9 +130,7 @@ describe('metricsMiddleware', () => {
     metricsMiddleware(req, res, next);
     res.triggerFinish();
 
-    expect(mockInc).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/wallets/:id' })
-    );
+    expect(mockInc).toHaveBeenCalledWith(expect.objectContaining({ path: '/wallets/:id' }));
   });
 
   it('should normalize MongoDB ObjectId in path to :id', () => {
@@ -140,9 +140,7 @@ describe('metricsMiddleware', () => {
     metricsMiddleware(req, res, next);
     res.triggerFinish();
 
-    expect(mockInc).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/transactions/:id' })
-    );
+    expect(mockInc).toHaveBeenCalledWith(expect.objectContaining({ path: '/transactions/:id' }));
   });
 
   it('should normalize numeric path segment to /:id', () => {
@@ -152,9 +150,7 @@ describe('metricsMiddleware', () => {
     metricsMiddleware(req, res, next);
     res.triggerFinish();
 
-    expect(mockInc).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/users/:id/profile' })
-    );
+    expect(mockInc).toHaveBeenCalledWith(expect.objectContaining({ path: '/users/:id/profile' }));
   });
 
   // ── route pattern from req.route ──────────────────────────────────────────
@@ -170,9 +166,7 @@ describe('metricsMiddleware', () => {
     metricsMiddleware(req, res, next);
     res.triggerFinish();
 
-    expect(mockInc).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/api/v1/wallets/:id' })
-    );
+    expect(mockInc).toHaveBeenCalledWith(expect.objectContaining({ path: '/api/v1/wallets/:id' }));
   });
 
   it('should fall back to normalized path when req.route is absent', () => {
@@ -182,8 +176,6 @@ describe('metricsMiddleware', () => {
     metricsMiddleware(req, res, next);
     res.triggerFinish();
 
-    expect(mockInc).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/webhooks/:id' })
-    );
+    expect(mockInc).toHaveBeenCalledWith(expect.objectContaining({ path: '/webhooks/:id' }));
   });
 });

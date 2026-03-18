@@ -39,12 +39,14 @@ const fakeWallet = {
   updatedAt: new Date(),
 };
 
-function buildReq(overrides: Partial<{
-  user: Record<string, unknown>;
-  body: Record<string, unknown>;
-  params: Record<string, string>;
-  query: Record<string, string>;
-}> = {}): AuthRequest {
+function buildReq(
+  overrides: Partial<{
+    user: Record<string, unknown>;
+    body: Record<string, unknown>;
+    params: Record<string, string>;
+    query: Record<string, string>;
+  }> = {}
+): AuthRequest {
   return {
     user: 'user' in overrides ? overrides.user : { userId: 'u1' },
     body: overrides.body ?? {},
@@ -175,7 +177,13 @@ describe('WalletController (unit)', () => {
   describe('getHistory', () => {
     it('should respond 200 with operation history', async () => {
       mockGetOperationHistory.mockResolvedValue([
-        { operationId: 'op_1', type: 'DEPOSIT', amount: 100, resultBalance: 600, createdAt: new Date() },
+        {
+          operationId: 'op_1',
+          type: 'DEPOSIT',
+          amount: 100,
+          resultBalance: 600,
+          createdAt: new Date(),
+        },
       ]);
       const req = buildReq({ query: { limit: '5' } });
       const res = buildRes();

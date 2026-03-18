@@ -207,9 +207,7 @@ describe('Notification E2E Tests', () => {
       const senderNotification = processedNotifications.find(
         (n) => n.type === 'TRANSACTION_COMPLETED'
       );
-      const receiverNotification = processedNotifications.find(
-        (n) => n.type === 'CREDIT_RECEIVED'
-      );
+      const receiverNotification = processedNotifications.find((n) => n.type === 'CREDIT_RECEIVED');
 
       expect(senderNotification?.userId).toBe(sender.user.userId);
       expect(receiverNotification?.userId).toBe(receiver.user.userId);
@@ -248,9 +246,7 @@ describe('Notification E2E Tests', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const failNotification = processedNotifications.find(
-        (n) => n.type === 'TRANSACTION_FAILED'
-      );
+      const failNotification = processedNotifications.find((n) => n.type === 'TRANSACTION_FAILED');
 
       expect(failNotification).toBeDefined();
       expect(failNotification?.userId).toBe(sender.user.userId);
@@ -287,9 +283,7 @@ describe('Notification E2E Tests', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const depositNotification = processedNotifications.find(
-        (n) => n.type === 'DEPOSIT_SUCCESS'
-      );
+      const depositNotification = processedNotifications.find((n) => n.type === 'DEPOSIT_SUCCESS');
 
       expect(depositNotification).toBeDefined();
       expect(depositNotification?.data?.amount).toBe(5000);

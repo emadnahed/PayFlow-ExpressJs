@@ -180,9 +180,7 @@ describe('Workers E2E Tests', () => {
       const senderNotification = processedNotifications.find(
         (n) => n.type === 'TRANSACTION_COMPLETED'
       );
-      const receiverNotification = processedNotifications.find(
-        (n) => n.type === 'CREDIT_RECEIVED'
-      );
+      const receiverNotification = processedNotifications.find((n) => n.type === 'CREDIT_RECEIVED');
 
       expect(senderNotification?.userId).toBe(testUserId);
       expect(receiverNotification?.userId).toBe(testUser2Id);

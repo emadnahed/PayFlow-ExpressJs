@@ -67,7 +67,9 @@ function createWorker(): PoolWorker {
 }
 
 function initializePool(): void {
-  if (poolInitialized || !isProduction) { return; }
+  if (poolInitialized || !isProduction) {
+    return;
+  }
 
   for (let i = 0; i < POOL_SIZE; i++) {
     workerPool.push(createWorker());
@@ -76,10 +78,14 @@ function initializePool(): void {
 }
 
 function processNextTask(): void {
-  if (taskQueue.length === 0) { return; }
+  if (taskQueue.length === 0) {
+    return;
+  }
 
   const availableWorker = workerPool.find((w) => !w.busy);
-  if (!availableWorker) { return; }
+  if (!availableWorker) {
+    return;
+  }
 
   const task = taskQueue.shift()!;
   availableWorker.busy = true;

@@ -259,13 +259,9 @@ describe('Tracing Module', () => {
       const testError = new Error('Test error');
 
       await expect(
-        createSagaSpan(
-          'failing-operation',
-          { operation: 'test' },
-          async () => {
-            throw testError;
-          }
-        )
+        createSagaSpan('failing-operation', { operation: 'test' }, async () => {
+          throw testError;
+        })
       ).rejects.toThrow('Test error');
 
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
@@ -277,13 +273,9 @@ describe('Tracing Module', () => {
 
     it('should handle non-Error exceptions', async () => {
       await expect(
-        createSagaSpan(
-          'failing-operation',
-          {},
-          async () => {
-            throw 'string error';
-          }
-        )
+        createSagaSpan('failing-operation', {}, async () => {
+          throw 'string error';
+        })
       ).rejects.toBe('string error');
 
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
@@ -294,13 +286,9 @@ describe('Tracing Module', () => {
 
     it('should always end span even on error', async () => {
       try {
-        await createSagaSpan(
-          'test',
-          {},
-          async () => {
-            throw new Error('Test');
-          }
-        );
+        await createSagaSpan('test', {}, async () => {
+          throw new Error('Test');
+        });
       } catch {
         // Expected
       }
@@ -359,11 +347,9 @@ describe('Tracing Module', () => {
     });
 
     it('should trace webhook delivery with correct attributes', async () => {
-      const result = await traceWebhook(
-        'wh_123',
-        'https://example.com/webhook',
-        async () => ({ status: 200 })
-      );
+      const result = await traceWebhook('wh_123', 'https://example.com/webhook', async () => ({
+        status: 200,
+      }));
 
       expect(result).toEqual({ status: 200 });
       expect(mockTracer.startActiveSpan).toHaveBeenCalledWith(
@@ -371,7 +357,10 @@ describe('Tracing Module', () => {
         expect.any(Function)
       );
       expect(mockSpan.setAttribute).toHaveBeenCalledWith('webhook.id', 'wh_123');
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('webhook.url', 'https://example.com/webhook');
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith(
+        'webhook.url',
+        'https://example.com/webhook'
+      );
     });
 
     it('should handle webhook delivery failures', async () => {

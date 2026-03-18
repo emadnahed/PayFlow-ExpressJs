@@ -26,10 +26,7 @@ async function processNotificationJob(
 ): Promise<NotificationJobResult> {
   const { userId, type, title, message, data } = job.data;
 
-  logger.info(
-    { userId, type, title, message, data },
-    'Processing notification'
-  );
+  logger.info({ userId, type, title, message, data }, 'Processing notification');
 
   // Simulate notification delivery
   // In production, implement actual delivery here:

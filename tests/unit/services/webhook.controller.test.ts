@@ -49,12 +49,14 @@ function makeWebhook(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function buildReq(overrides: Partial<{
-  user: Record<string, unknown>;
-  body: Record<string, unknown>;
-  params: Record<string, string>;
-  query: Record<string, string>;
-}> = {}): AuthRequest {
+function buildReq(
+  overrides: Partial<{
+    user: Record<string, unknown>;
+    body: Record<string, unknown>;
+    params: Record<string, string>;
+    query: Record<string, string>;
+  }> = {}
+): AuthRequest {
   return {
     user: 'user' in overrides ? overrides.user : { userId: 'u1' },
     body: overrides.body ?? {},
@@ -139,7 +141,9 @@ describe('WebhookController (unit)', () => {
     });
 
     it('should forward 404 to next', async () => {
-      mockGetWebhook.mockRejectedValue(Object.assign(new Error('Webhook not found'), { statusCode: 404 }));
+      mockGetWebhook.mockRejectedValue(
+        Object.assign(new Error('Webhook not found'), { statusCode: 404 })
+      );
       const req = buildReq({ params: { id: 'wh_missing' } });
       const res = buildRes();
 
@@ -173,7 +177,10 @@ describe('WebhookController (unit)', () => {
 
       await webhookController.list(req, res, next);
 
-      expect(mockListWebhooks).toHaveBeenCalledWith('u1', expect.objectContaining({ isActive: true }));
+      expect(mockListWebhooks).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({ isActive: true })
+      );
     });
 
     it('should throw 401 when no user', async () => {

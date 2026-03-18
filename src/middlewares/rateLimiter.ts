@@ -65,7 +65,9 @@ const noopLimiter = (_req: Request, _res: Response, next: NextFunction) => next(
  * Check if request has valid load test bypass header
  */
 const hasValidBypassHeader = (req: Request): boolean => {
-  if (!RATE_LIMIT_CONFIG.loadTestSecret) { return false; }
+  if (!RATE_LIMIT_CONFIG.loadTestSecret) {
+    return false;
+  }
   const token = req.get('X-Load-Test-Token');
   return token === RATE_LIMIT_CONFIG.loadTestSecret;
 };
@@ -95,123 +97,133 @@ const createLimiter = (limiter: RateLimitRequestHandler): RateLimitRequestHandle
  * Applied to all routes
  * Configurable via RATE_LIMIT_WINDOW_MS and RATE_LIMIT_MAX_REQUESTS
  */
-export const globalLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
-  store: createStore(),
-  windowMs: RATE_LIMIT_CONFIG.global.windowMs,
-  max: RATE_LIMIT_CONFIG.global.maxRequests,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.RATE_LIMIT_EXCEEDED,
-      message: 'Too many requests, please try again later',
-      timestamp: new Date().toISOString(),
+export const globalLimiter: RateLimitRequestHandler = createLimiter(
+  rateLimit({
+    store: createStore(),
+    windowMs: RATE_LIMIT_CONFIG.global.windowMs,
+    max: RATE_LIMIT_CONFIG.global.maxRequests,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: ErrorCode.RATE_LIMIT_EXCEEDED,
+        message: 'Too many requests, please try again later',
+        timestamp: new Date().toISOString(),
+      },
     },
-  },
-  skip: (req) => {
-    // Skip rate limiting for health checks and metrics
-    return req.path === '/health' || req.path === '/health/live' || req.path === '/metrics';
-  },
-}));
+    skip: (req) => {
+      // Skip rate limiting for health checks and metrics
+      return req.path === '/health' || req.path === '/health/live' || req.path === '/metrics';
+    },
+  })
+);
 
 /**
  * Strict rate limiter for authentication endpoints
  * Prevents brute force attacks in production
  * Configurable via AUTH_RATE_LIMIT_WINDOW_MS and AUTH_RATE_LIMIT_MAX
  */
-export const authLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
-  store: createStore(),
-  windowMs: RATE_LIMIT_CONFIG.auth.windowMs,
-  max: RATE_LIMIT_CONFIG.auth.maxRequests,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.TOO_MANY_LOGIN_ATTEMPTS,
-      message: 'Too many login attempts, please try again later',
-      timestamp: new Date().toISOString(),
+export const authLimiter: RateLimitRequestHandler = createLimiter(
+  rateLimit({
+    store: createStore(),
+    windowMs: RATE_LIMIT_CONFIG.auth.windowMs,
+    max: RATE_LIMIT_CONFIG.auth.maxRequests,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: ErrorCode.TOO_MANY_LOGIN_ATTEMPTS,
+        message: 'Too many login attempts, please try again later',
+        timestamp: new Date().toISOString(),
+      },
     },
-  },
-  keyGenerator: (req) => {
-    // Use IP + email for more precise tracking
-    const email = req.body?.email || '';
-    return `${req.ip}:${email}`;
-  },
-  validate: false,
-}));
+    keyGenerator: (req) => {
+      // Use IP + email for more precise tracking
+      const email = req.body?.email || '';
+      return `${req.ip}:${email}`;
+    },
+    validate: false,
+  })
+);
 
 /**
  * Transaction rate limiter
  * Prevents transaction abuse
  * Configurable via TX_RATE_LIMIT_WINDOW_MS and TX_RATE_LIMIT_MAX
  */
-export const transactionLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
-  store: createStore(),
-  windowMs: RATE_LIMIT_CONFIG.transaction.windowMs,
-  max: RATE_LIMIT_CONFIG.transaction.maxRequests,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.TOO_MANY_TRANSACTIONS,
-      message: 'Too many transactions, please try again later',
-      timestamp: new Date().toISOString(),
+export const transactionLimiter: RateLimitRequestHandler = createLimiter(
+  rateLimit({
+    store: createStore(),
+    windowMs: RATE_LIMIT_CONFIG.transaction.windowMs,
+    max: RATE_LIMIT_CONFIG.transaction.maxRequests,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: ErrorCode.TOO_MANY_TRANSACTIONS,
+        message: 'Too many transactions, please try again later',
+        timestamp: new Date().toISOString(),
+      },
     },
-  },
-  keyGenerator: (req: AuthenticatedRequest) => {
-    // Use user ID if authenticated, otherwise IP
-    return req.user?.userId || req.ip || 'unknown';
-  },
-  validate: false,
-}));
+    keyGenerator: (req: AuthenticatedRequest) => {
+      // Use user ID if authenticated, otherwise IP
+      return req.user?.userId || req.ip || 'unknown';
+    },
+    validate: false,
+  })
+);
 
 /**
  * API rate limiter for general API calls
  * Configurable via API_RATE_LIMIT_WINDOW_MS and API_RATE_LIMIT_MAX
  */
-export const apiLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
-  store: createStore(),
-  windowMs: RATE_LIMIT_CONFIG.api.windowMs,
-  max: RATE_LIMIT_CONFIG.api.maxRequests,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.RATE_LIMIT_EXCEEDED,
-      message: 'API rate limit exceeded, please slow down',
-      timestamp: new Date().toISOString(),
+export const apiLimiter: RateLimitRequestHandler = createLimiter(
+  rateLimit({
+    store: createStore(),
+    windowMs: RATE_LIMIT_CONFIG.api.windowMs,
+    max: RATE_LIMIT_CONFIG.api.maxRequests,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: ErrorCode.RATE_LIMIT_EXCEEDED,
+        message: 'API rate limit exceeded, please slow down',
+        timestamp: new Date().toISOString(),
+      },
     },
-  },
-  keyGenerator: (req: AuthenticatedRequest) => {
-    return req.user?.userId || req.ip || 'unknown';
-  },
-  validate: false,
-}));
+    keyGenerator: (req: AuthenticatedRequest) => {
+      return req.user?.userId || req.ip || 'unknown';
+    },
+    validate: false,
+  })
+);
 
 /**
  * Webhook registration rate limiter
  * Configurable via WEBHOOK_RATE_LIMIT_WINDOW_MS and WEBHOOK_RATE_LIMIT_MAX
  */
-export const webhookLimiter: RateLimitRequestHandler = createLimiter(rateLimit({
-  store: createStore(),
-  windowMs: RATE_LIMIT_CONFIG.webhook.windowMs,
-  max: RATE_LIMIT_CONFIG.webhook.maxRequests,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.RATE_LIMIT_EXCEEDED,
-      message: 'Too many webhook registrations, please try again later',
-      timestamp: new Date().toISOString(),
+export const webhookLimiter: RateLimitRequestHandler = createLimiter(
+  rateLimit({
+    store: createStore(),
+    windowMs: RATE_LIMIT_CONFIG.webhook.windowMs,
+    max: RATE_LIMIT_CONFIG.webhook.maxRequests,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: ErrorCode.RATE_LIMIT_EXCEEDED,
+        message: 'Too many webhook registrations, please try again later',
+        timestamp: new Date().toISOString(),
+      },
     },
-  },
-  keyGenerator: (req: AuthenticatedRequest) => {
-    return `webhook:${req.user?.userId || req.ip || 'unknown'}`;
-  },
-  validate: false,
-}));
+    keyGenerator: (req: AuthenticatedRequest) => {
+      return `webhook:${req.user?.userId || req.ip || 'unknown'}`;
+    },
+    validate: false,
+  })
+);

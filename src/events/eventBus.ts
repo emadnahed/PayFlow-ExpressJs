@@ -100,7 +100,10 @@ class EventBus {
     });
 
     await this.publisher.publish(channel, message);
-    logger.debug({ eventType: event.eventType, transactionId: event.transactionId }, 'Event published');
+    logger.debug(
+      { eventType: event.eventType, transactionId: event.transactionId },
+      'Event published'
+    );
   }
 
   async subscribe(eventType: EventType, handler: EventHandler): Promise<void> {

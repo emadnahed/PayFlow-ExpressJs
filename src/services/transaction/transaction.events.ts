@@ -26,7 +26,10 @@ async function handleDebitSuccess(event: DebitSuccessEvent): Promise<void> {
   try {
     await transactionService.onDebitSuccess(txnId);
   } catch (error) {
-    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling DEBIT_SUCCESS');
+    logger.error(
+      { transactionId: txnId, err: error },
+      'Transaction Saga: CRITICAL error handling DEBIT_SUCCESS'
+    );
     // Re-throw to allow higher-level error handling (e.g., dead-letter queue)
     throw error;
   }
@@ -44,7 +47,10 @@ async function handleDebitFailed(event: DebitFailedEvent): Promise<void> {
   try {
     await transactionService.onDebitFailed(txnId, reason);
   } catch (error) {
-    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling DEBIT_FAILED');
+    logger.error(
+      { transactionId: txnId, err: error },
+      'Transaction Saga: CRITICAL error handling DEBIT_FAILED'
+    );
     throw error;
   }
 }
@@ -60,7 +66,10 @@ async function handleCreditSuccess(event: CreditSuccessEvent): Promise<void> {
   try {
     await transactionService.onCreditSuccess(txnId);
   } catch (error) {
-    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling CREDIT_SUCCESS');
+    logger.error(
+      { transactionId: txnId, err: error },
+      'Transaction Saga: CRITICAL error handling CREDIT_SUCCESS'
+    );
     throw error;
   }
 }
@@ -77,7 +86,10 @@ async function handleCreditFailed(event: CreditFailedEvent): Promise<void> {
   try {
     await transactionService.onCreditFailed(txnId, reason);
   } catch (error) {
-    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling CREDIT_FAILED');
+    logger.error(
+      { transactionId: txnId, err: error },
+      'Transaction Saga: CRITICAL error handling CREDIT_FAILED'
+    );
     throw error;
   }
 }
@@ -93,7 +105,10 @@ async function handleRefundCompleted(event: RefundCompletedEvent): Promise<void>
   try {
     await transactionService.onRefundCompleted(txnId);
   } catch (error) {
-    logger.error({ transactionId: txnId, err: error }, 'Transaction Saga: CRITICAL error handling REFUND_COMPLETED');
+    logger.error(
+      { transactionId: txnId, err: error },
+      'Transaction Saga: CRITICAL error handling REFUND_COMPLETED'
+    );
     throw error;
   }
 }

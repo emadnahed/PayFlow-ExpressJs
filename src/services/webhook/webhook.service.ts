@@ -153,8 +153,12 @@ export class WebhookService {
     }
 
     // Update fields
-    if (dto.url !== undefined) {webhook.url = dto.url;}
-    if (dto.events !== undefined) {webhook.events = dto.events;}
+    if (dto.url !== undefined) {
+      webhook.url = dto.url;
+    }
+    if (dto.events !== undefined) {
+      webhook.events = dto.events;
+    }
     if (dto.isActive !== undefined) {
       webhook.isActive = dto.isActive;
       // Reset failure count when re-enabling

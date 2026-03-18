@@ -5,7 +5,12 @@
  */
 import Redis from 'ioredis';
 
-import { connectTestRedis, disconnectTestRedis, flushTestRedis, getTestRedisStatus } from '../../helpers/testEventBus';
+import {
+  connectTestRedis,
+  disconnectTestRedis,
+  flushTestRedis,
+  getTestRedisStatus,
+} from '../../helpers/testEventBus';
 
 const TEST_REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const TEST_REDIS_PORT = parseInt(process.env.REDIS_PORT || '6380', 10);

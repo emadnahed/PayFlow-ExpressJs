@@ -18,7 +18,9 @@ type RateLimitOptions = {
 };
 const capturedLimiters: RateLimitOptions[] = [];
 
-const mockRateLimiter = jest.fn().mockImplementation((req: Request, _res: Response, next: NextFunction) => next());
+const mockRateLimiter = jest
+  .fn()
+  .mockImplementation((req: Request, _res: Response, next: NextFunction) => next());
 
 jest.mock('express-rate-limit', () => {
   const rl = jest.fn().mockImplementation((options: RateLimitOptions) => {
@@ -39,14 +41,20 @@ let mockLoadTestSecret = 'secret-token';
 
 jest.mock('../../../src/config', () => ({
   config: {
-    get isTest() { return mockIsTest; },
+    get isTest() {
+      return mockIsTest;
+    },
   },
 }));
 
 jest.mock('../../../src/config/environments', () => ({
   RATE_LIMIT_CONFIG: {
-    get disabled() { return mockRateLimitDisabled; },
-    get loadTestSecret() { return mockLoadTestSecret; },
+    get disabled() {
+      return mockRateLimitDisabled;
+    },
+    get loadTestSecret() {
+      return mockLoadTestSecret;
+    },
     global: { windowMs: 60000, maxRequests: 100 },
     auth: { windowMs: 900000, maxRequests: 20 },
     transaction: { windowMs: 60000, maxRequests: 30 },
@@ -109,9 +117,11 @@ describe('Rate Limiter Middleware', () => {
   describe('X-Load-Test-Token bypass', () => {
     it('should call next() immediately when valid bypass token is provided', () => {
       const req = buildReq({
-        get: jest.fn().mockImplementation((header: string) =>
-          header === 'X-Load-Test-Token' ? 'secret-token' : undefined
-        ),
+        get: jest
+          .fn()
+          .mockImplementation((header: string) =>
+            header === 'X-Load-Test-Token' ? 'secret-token' : undefined
+          ),
       });
 
       globalLimiter(req, buildRes(), next);
@@ -122,9 +132,11 @@ describe('Rate Limiter Middleware', () => {
 
     it('should NOT bypass when token is wrong', () => {
       const req = buildReq({
-        get: jest.fn().mockImplementation((header: string) =>
-          header === 'X-Load-Test-Token' ? 'wrong-token' : undefined
-        ),
+        get: jest
+          .fn()
+          .mockImplementation((header: string) =>
+            header === 'X-Load-Test-Token' ? 'wrong-token' : undefined
+          ),
       });
 
       globalLimiter(req, buildRes(), next);
@@ -196,7 +208,8 @@ describe('Rate Limiter Middleware', () => {
         default: jest.fn().mockImplementation(() => ({})),
       }));
 
-      const { globalLimiter: disabledLimiter } = await import('../../../src/middlewares/rateLimiter');
+      const { globalLimiter: disabledLimiter } =
+        await import('../../../src/middlewares/rateLimiter');
       const localNext = jest.fn();
       const req = buildReq();
       disabledLimiter(req, buildRes(), localNext);

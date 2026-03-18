@@ -55,10 +55,7 @@ describe('Ledger Event Handlers', () => {
       await registerLedgerEventHandlers();
 
       expect(mockSubscribe).toHaveBeenCalledTimes(1);
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        EventType.DEBIT_SUCCESS,
-        expect.any(Function)
-      );
+      expect(mockSubscribe).toHaveBeenCalledWith(EventType.DEBIT_SUCCESS, expect.any(Function));
     });
 
     it('should throw error if subscription fails', async () => {

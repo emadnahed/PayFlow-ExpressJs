@@ -169,9 +169,7 @@ describe('correlationMiddleware', () => {
     correlationMiddleware(req, res, next);
     res.triggerFinish();
 
-    const completedCall = infoSpy.mock.calls.find(
-      (c: unknown[]) => c[1] === 'Request completed'
-    );
+    const completedCall = infoSpy.mock.calls.find((c: unknown[]) => c[1] === 'Request completed');
     expect(completedCall).toBeDefined();
     expect(completedCall?.[0]).toMatchObject({ statusCode: 404 });
   });

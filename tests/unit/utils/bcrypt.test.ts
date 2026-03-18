@@ -205,7 +205,9 @@ describe('Bcrypt Worker Pool', () => {
       ];
 
       // All 4 workers should have postMessage called
-      const workers = mockWorkerConstructor.mock.results as { value: { postMessage: jest.Mock; on: jest.Mock } }[];
+      const workers = mockWorkerConstructor.mock.results as {
+        value: { postMessage: jest.Mock; on: jest.Mock };
+      }[];
       expect(workers.length).toBe(4); // Pool size is 4
 
       // Complete first 4 tasks - this will free workers for the queued task
@@ -599,7 +601,9 @@ describe('Bcrypt Worker Pool', () => {
     it('should remove message listener after task completes', async () => {
       const hashPromise = hashPassword('test');
 
-      const workerCall = (mockWorkerConstructor.mock.results as { value: { on: jest.Mock; off: jest.Mock } }[])[0].value;
+      const workerCall = (
+        mockWorkerConstructor.mock.results as { value: { on: jest.Mock; off: jest.Mock } }[]
+      )[0].value;
 
       // Get the message handler
       const messageHandler = workerCall.on.mock.calls.find(

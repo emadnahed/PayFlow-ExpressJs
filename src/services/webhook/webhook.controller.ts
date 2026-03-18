@@ -13,7 +13,6 @@ import { IWebhookSubscription } from '../../models/WebhookSubscription';
 
 import { webhookService, CreateWebhookDTO, UpdateWebhookDTO } from './webhook.service';
 
-
 /**
  * Convert webhook document to safe DTO (hide secret)
  */

@@ -19,7 +19,6 @@ import {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('log-context utilities', () => {
-
   // ── getCorrelationId ───────────────────────────────────────────────────────
 
   describe('getCorrelationId', () => {

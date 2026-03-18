@@ -202,15 +202,36 @@ describe('Event Bus Integration Tests', () => {
 
   describe('Event Types', () => {
     const eventTests = [
-      { type: EventType.TRANSACTION_INITIATED, payload: { senderId: 'user1', receiverId: 'user2', amount: 100 } },
+      {
+        type: EventType.TRANSACTION_INITIATED,
+        payload: { senderId: 'user1', receiverId: 'user2', amount: 100 },
+      },
       { type: EventType.DEBIT_SUCCESS, payload: { userId: 'user1', amount: 100, newBalance: 900 } },
-      { type: EventType.DEBIT_FAILED, payload: { userId: 'user1', amount: 100, reason: 'INSUFFICIENT_BALANCE' } },
-      { type: EventType.CREDIT_SUCCESS, payload: { userId: 'user2', amount: 100, newBalance: 1100 } },
-      { type: EventType.CREDIT_FAILED, payload: { userId: 'user2', amount: 100, reason: 'WALLET_NOT_FOUND' } },
-      { type: EventType.TRANSACTION_COMPLETED, payload: { senderId: 'user1', receiverId: 'user2', amount: 100 } },
+      {
+        type: EventType.DEBIT_FAILED,
+        payload: { userId: 'user1', amount: 100, reason: 'INSUFFICIENT_BALANCE' },
+      },
+      {
+        type: EventType.CREDIT_SUCCESS,
+        payload: { userId: 'user2', amount: 100, newBalance: 1100 },
+      },
+      {
+        type: EventType.CREDIT_FAILED,
+        payload: { userId: 'user2', amount: 100, reason: 'WALLET_NOT_FOUND' },
+      },
+      {
+        type: EventType.TRANSACTION_COMPLETED,
+        payload: { senderId: 'user1', receiverId: 'user2', amount: 100 },
+      },
       { type: EventType.TRANSACTION_FAILED, payload: { reason: 'Credit failed', refunded: true } },
-      { type: EventType.REFUND_REQUESTED, payload: { senderId: 'user1', amount: 100, reason: 'Credit failed' } },
-      { type: EventType.REFUND_COMPLETED, payload: { userId: 'user1', amount: 100, newBalance: 1000 } },
+      {
+        type: EventType.REFUND_REQUESTED,
+        payload: { senderId: 'user1', amount: 100, reason: 'Credit failed' },
+      },
+      {
+        type: EventType.REFUND_COMPLETED,
+        payload: { userId: 'user1', amount: 100, newBalance: 1000 },
+      },
     ];
 
     it.each(eventTests)('should handle $type events', async ({ type, payload }) => {

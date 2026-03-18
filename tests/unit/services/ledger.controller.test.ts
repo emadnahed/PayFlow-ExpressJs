@@ -104,9 +104,7 @@ describe('LedgerController (unit)', () => {
 
       await ledgerController.updateSimulationConfig(req, res, next);
 
-      expect(mockEnable).toHaveBeenCalledWith(
-        expect.objectContaining({ failureRate: 0.5 })
-      );
+      expect(mockEnable).toHaveBeenCalledWith(expect.objectContaining({ failureRate: 0.5 }));
       expect(res.status).toHaveBeenCalledWith(200);
     });
 

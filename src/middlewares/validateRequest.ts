@@ -17,7 +17,9 @@ export const validateRequest = (req: Request, _res: Response, next: NextFunction
       .reduce(
         (acc, err) => {
           const field = (err as { path: string }).path;
-          if (!acc[field]) {acc[field] = [];}
+          if (!acc[field]) {
+            acc[field] = [];
+          }
           acc[field].push(err.msg);
           return acc;
         },

@@ -75,7 +75,9 @@ describe('authMiddleware', () => {
 
   it('should call next(error) when verifyToken throws', async () => {
     const req = buildReq('Bearer bad-token');
-    mockVerifyToken.mockImplementation(() => { throw new Error('Invalid token'); });
+    mockVerifyToken.mockImplementation(() => {
+      throw new Error('Invalid token');
+    });
 
     await authMiddleware(req, mockRes, next);
 
@@ -99,7 +101,9 @@ describe('authMiddleware', () => {
 
     await authMiddleware(req, mockRes, next);
 
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('deactivated') }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('deactivated') })
+    );
   });
 
   it('should attach user to req and call next() with no args on success', async () => {
@@ -137,7 +141,9 @@ describe('optionalAuthMiddleware', () => {
 
   it('should call next() without user when verifyToken throws', async () => {
     const req = buildReq('Bearer bad-token');
-    mockVerifyToken.mockImplementation(() => { throw new Error('bad token'); });
+    mockVerifyToken.mockImplementation(() => {
+      throw new Error('bad token');
+    });
 
     await optionalAuthMiddleware(req, mockRes, next);
 

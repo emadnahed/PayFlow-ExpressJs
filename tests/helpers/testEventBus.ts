@@ -1,8 +1,5 @@
 import Redis from 'ioredis';
 
-const TEST_REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const TEST_REDIS_PORT = parseInt(process.env.REDIS_PORT || '6380', 10);
-
 let testRedis: Redis | null = null;
 
 export const connectTestRedis = async (): Promise<Redis> => {
@@ -11,8 +8,8 @@ export const connectTestRedis = async (): Promise<Redis> => {
   }
 
   testRedis = new Redis({
-    host: TEST_REDIS_HOST,
-    port: TEST_REDIS_PORT,
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
     maxRetriesPerRequest: 3,
   });
 
